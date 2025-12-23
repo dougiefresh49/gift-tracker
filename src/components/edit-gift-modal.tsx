@@ -1,14 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { X } from "lucide-react";
-import type { Gift, Profile } from "~/lib/types";
+import { useState } from 'react';
+import { X } from 'lucide-react';
+import type { Gift, Profile } from '~/lib/types';
+
+import { updateGift, deleteGift } from '~/actions/gift-actions';
 
 interface EditGiftModalProps {
   gift: Gift;
   profiles: Profile[];
   onClose: () => void;
-  onUpdate: () => void;
+  onUpdate?: () => void;
 }
 
 export function EditGiftModal({
@@ -20,7 +22,7 @@ export function EditGiftModal({
   const [formData, setFormData] = useState({
     name: gift.name,
     price: gift.price ?? 0,
-    imageUrl: gift.image_url ?? "",
+    imageUrl: gift.image_url ?? '',
     recipientIds: gift.gift_recipients?.map((r) => r.profile.id) ?? [],
     isSanta: gift.is_santa,
   });
@@ -28,75 +30,48 @@ export function EditGiftModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.recipientIds.length === 0) {
-      alert("Please select at least one recipient");
+      alert('Please select at least one recipient');
       return;
     }
 
     const status = formData.isSanta
-      ? "santa"
-      : gift.status === "santa"
-      ? "available"
+      ? 'santa'
+      : gift.status === 'santa'
+      ? 'available'
       : gift.status;
 
-    // 1. Update Gift Details
-    const { error } = await supabase
-      .from("gifts")
-      .update({
-        name: formData.name,
-        price: formData.price,
-        image_url: formData.imageUrl || null,
-        is_santa: formData.isSanta,
-        status: status,
-      })
-      .eq("id", gift.id);
-
-    if (error) {
-      alert("Error updating gift");
-      return;
+    try {
+      await updateGift(gift.id, { ...formData, status });
+      onUpdate?.();
+      onClose();
+    } catch (e: any) {
+      alert(e.message);
     }
+  };
 
-    // 2. Sync Recipients
-    const currentIds = gift.gift_recipients?.map((r) => r.profile.id) ?? [];
-    const newIds = formData.recipientIds;
-
-    const toAdd = newIds.filter((id) => !currentIds.includes(id));
-    const toRemove = currentIds.filter((id) => !newIds.includes(id));
-
-    if (toRemove.length > 0) {
-      await supabase
-        .from("gift_recipients")
-        .delete()
-        .eq("gift_id", gift.id)
-        .in("profile_id", toRemove);
+  const handleDelete = async () => {
+    if (confirm('Delete item?')) {
+      try {
+        await deleteGift(gift.id);
+        onUpdate?.();
+        onClose();
+      } catch (e: any) {
+        alert(e.message);
+      }
     }
-
-    if (toAdd.length > 0) {
-      await supabase.from("gift_recipients").insert(
-        toAdd.map((pid) => ({
-          gift_id: gift.id,
-          profile_id: pid,
-        }))
-      );
-    }
-
-    onUpdate();
   };
 
   const toggleRecipient = (id: string) => {
     setFormData((prev) => {
       if (prev.recipientIds.includes(id)) {
-        return { ...prev, recipientIds: prev.recipientIds.filter((r) => r !== id) };
+        return {
+          ...prev,
+          recipientIds: prev.recipientIds.filter((r) => r !== id),
+        };
       } else {
         return { ...prev, recipientIds: [...prev.recipientIds, id] };
       }
     });
-  };
-
-  const handleDelete = async () => {
-    if (confirm("Delete item?")) {
-      await supabase.from("gifts").delete().eq("id", gift.id);
-      onUpdate();
-    }
   };
 
   return (
@@ -112,9 +87,7 @@ export function EditGiftModal({
           <input
             className="w-full border p-2 rounded"
             value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Gift name"
             required
           />
@@ -143,8 +116,8 @@ export function EditGiftModal({
                   onClick={() => toggleRecipient(p.id)}
                   className={`px-3 py-1 text-sm rounded-full border transition-colors ${
                     formData.recipientIds.includes(p.id)
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {p.name}
@@ -190,4 +163,3 @@ export function EditGiftModal({
     </div>
   );
 }
-
