@@ -1,11 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { ImageToggleButton } from '~/components/image-toggle-button';
 
 interface ImageToggleContextType {
   hideImages: boolean;
   toggleImages: () => void;
-  isDevMode: boolean;
 }
 
 const ImageToggleContext = createContext<ImageToggleContextType | undefined>(
@@ -13,18 +13,18 @@ const ImageToggleContext = createContext<ImageToggleContextType | undefined>(
 );
 
 export function ImageToggleProvider({ children }: { children: ReactNode }) {
-  const [hideImages, setHideImages] = useState(true);
-  const isDevMode = process.env.NODE_ENV === 'development';
+  const [hideImages, setHideImages] = useState(false);
 
   const toggleImages = () => {
     setHideImages((prev) => !prev);
   };
 
   return (
-    <ImageToggleContext.Provider
-      value={{ hideImages, toggleImages, isDevMode }}
-    >
+    <ImageToggleContext.Provider value={{ hideImages, toggleImages }}>
       {children}
+      <div className="fixed bottom-24 right-4 z-50">
+        <ImageToggleButton />
+      </div>
     </ImageToggleContext.Provider>
   );
 }
