@@ -91,12 +91,14 @@ export function GiftCard({
     }
   };
 
+  const hasOpenDropdown = activeRecipientDropdown === gift.id || activeDropdown === gift.id;
+
   return (
     <>
       <div
-        className={`bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col relative group ${
+        className={`bg-white rounded-xl border shadow-sm overflow-visible flex flex-col relative group ${
           gift.status === 'claimed' ? 'border-l-4 border-l-green-500' : ''
-        }`}
+        } ${hasOpenDropdown ? 'z-[100]' : ''}`}
       >
         <div className="h-40 bg-slate-100 relative">
           {hideImages ? (
@@ -112,7 +114,7 @@ export function GiftCard({
               <Gift size={32} />
             </div>
           )}
-          <div className="absolute top-2 left-2 z-20 recipient-dropdown">
+          <div className="absolute top-2 left-2 recipient-dropdown">
             <button
               type="button"
               onClick={(e) => {
@@ -122,7 +124,7 @@ export function GiftCard({
                   activeRecipientDropdown === gift.id ? null : gift.id
                 );
               }}
-              className="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold shadow-md hover:bg-red-700 cursor-pointer transition-colors flex items-center gap-1 max-w-[150px]"
+              className="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold shadow-md hover:bg-red-700 cursor-pointer transition-colors flex items-center gap-1 max-w-[150px] relative"
             >
               <span className="truncate">
                 For{' '}
@@ -133,7 +135,7 @@ export function GiftCard({
               <ChevronDown size={10} className="shrink-0" />
             </button>
             {activeRecipientDropdown === gift.id && (
-              <div className="absolute top-full left-0 mt-1 w-40 bg-white border rounded shadow-xl py-1 z-30">
+              <div className="absolute top-full left-0 mt-1 w-40 bg-white border rounded shadow-xl py-1 z-[140]">
                 {profiles.map((p) => {
                   const isSelected = recipients.some((r) => r.id === p.id);
                   return (
@@ -170,6 +172,28 @@ export function GiftCard({
         <div className="p-3 flex-1 flex flex-col">
           <h3 className="font-bold text-sm mb-3 line-clamp-2">{gift.name}</h3>
 
+          {gift.purchaser_id && (
+            <p className="text-xs text-slate-500 mb-2">
+              Purchased by:{' '}
+              <span className="font-bold">
+                {profiles.find((p) => p.id === gift.purchaser_id)?.name ?? 'Unknown'}
+              </span>
+            </p>
+          )}
+
+          {gift.gift_tags && gift.gift_tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {gift.gift_tags.map((tagObj, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-700"
+                >
+                  {tagObj.tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {showClaimButton && (
             <div className="mt-auto flex rounded-lg shadow-sm">
               <button
@@ -196,12 +220,12 @@ export function GiftCard({
                       activeDropdown === gift.id ? null : gift.id
                     );
                   }}
-                  className="h-full px-2 text-white hover:bg-green-800 rounded-r-lg"
+                  className="h-full px-2 text-white hover:bg-green-800 rounded-r-lg relative"
                 >
                   <ChevronDown size={14} />
                 </button>
                 {activeDropdown === gift.id && (
-                  <div className="absolute bottom-full right-0 mb-1 w-32 bg-white border rounded shadow-xl py-1 z-30">
+                  <div className="absolute bottom-full right-0 mb-1 w-32 bg-white border rounded shadow-xl py-1 z-[140]">
                     {profiles
                       .filter((p) => p.id !== currentUser)
                       .map((p) => (

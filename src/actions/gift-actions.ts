@@ -8,6 +8,8 @@ export async function addGift(formData: {
   price: number;
   imageUrl: string;
   recipientIds: string[];
+  purchaserId?: string;
+  tags?: string[];
   isSanta: boolean;
 }) {
   // 1. Insert Gift
@@ -17,6 +19,7 @@ export async function addGift(formData: {
       name: formData.name,
       price: formData.price,
       image_url: formData.imageUrl || null,
+      purchaser_id: formData.purchaserId || null,
       is_santa: formData.isSanta,
       status: formData.isSanta ? 'santa' : 'available',
     })
@@ -41,6 +44,22 @@ export async function addGift(formData: {
     throw new Error('Error adding recipients: ' + recipientError.message);
   }
 
+  // 3. Insert Tags
+  if (formData.tags && formData.tags.length > 0) {
+    const tagInserts = formData.tags.map((tag) => ({
+      gift_id: gift.id,
+      tag: tag.trim(),
+    }));
+
+    const { error: tagError } = await supabase
+      .from('gift_tags')
+      .insert(tagInserts);
+
+    if (tagError) {
+      throw new Error('Error adding tags: ' + tagError.message);
+    }
+  }
+
   revalidatePath('/');
 }
 
@@ -51,6 +70,8 @@ export async function updateGift(
     price: number;
     imageUrl: string;
     recipientIds: string[];
+    purchaserId?: string;
+    tags?: string[];
     isSanta: boolean;
     status: string;
   }
@@ -62,6 +83,7 @@ export async function updateGift(
       name: formData.name,
       price: formData.price,
       image_url: formData.imageUrl || null,
+      purchaser_id: formData.purchaserId || null,
       is_santa: formData.isSanta,
       status: formData.status,
     })
@@ -99,6 +121,28 @@ export async function updateGift(
         profile_id: pid,
       }))
     );
+  }
+
+  // 3. Sync Tags
+  if (formData.tags !== undefined) {
+    // Delete all existing tags
+    await supabase.from('gift_tags').delete().eq('gift_id', giftId);
+
+    // Insert new tags
+    if (formData.tags.length > 0) {
+      const tagInserts = formData.tags.map((tag) => ({
+        gift_id: giftId,
+        tag: tag.trim(),
+      }));
+
+      const { error: tagError } = await supabase
+        .from('gift_tags')
+        .insert(tagInserts);
+
+      if (tagError) {
+        throw new Error('Error updating tags: ' + tagError.message);
+      }
+    }
   }
 
   revalidatePath('/');
@@ -188,5 +232,29 @@ export async function addProfile(name: string) {
 export async function deleteProfile(id: string) {
   const { error } = await supabase.from('profiles').delete().eq('id', id);
   if (error) throw new Error('Error deleting profile');
+  revalidatePath('/');
+}
+
+export async function addReconciliation(reconciliation: {
+  gifterId: string;
+  recipientId: string;
+  purchaserId: string;
+  amount: number;
+  transactionType: 'iou' | 'cash' | 'check' | 'bank_transfer' | 'trade';
+  notes?: string;
+}) {
+  const { error } = await supabase.from('reconciliations').insert({
+    gifter_id: reconciliation.gifterId,
+    recipient_id: reconciliation.recipientId,
+    purchaser_id: reconciliation.purchaserId,
+    amount: reconciliation.amount,
+    transaction_type: reconciliation.transactionType,
+    notes: reconciliation.notes || null,
+  });
+
+  if (error) {
+    throw new Error('Error adding reconciliation: ' + error.message);
+  }
+
   revalidatePath('/');
 }

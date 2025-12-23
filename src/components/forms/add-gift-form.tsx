@@ -16,6 +16,9 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
     price: 0,
     imageUrl: "",
     recipientIds: [] as string[],
+    purchaserId: "",
+    tags: [] as string[],
+    newTag: "",
     isSanta: false,
   });
 
@@ -67,6 +70,26 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
           required
         />
       </div>
+
+      <div>
+        <label className="block text-sm font-bold text-slate-700 mb-2">
+          Purchaser (Who bought this?)
+        </label>
+        <select
+          value={formData.purchaserId}
+          onChange={(e) =>
+            setFormData({ ...formData, purchaserId: e.target.value })
+          }
+          className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select purchaser (optional)</option>
+          {profiles.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
       
       <div className="space-y-1">
         <p className="text-sm font-bold text-slate-500">Recipients:</p>
@@ -85,6 +108,53 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
               {p.name}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-sm font-bold text-slate-500">Tags:</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {formData.tags.map((tag, idx) => (
+            <span
+              key={idx}
+              className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 flex items-center gap-1"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    tags: formData.tags.filter((_, i) => i !== idx),
+                  })
+                }
+                className="text-blue-700 hover:text-blue-900"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={formData.newTag}
+            onChange={(e) =>
+              setFormData({ ...formData, newTag: e.target.value })
+            }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && formData.newTag.trim()) {
+                e.preventDefault();
+                setFormData({
+                  ...formData,
+                  tags: [...formData.tags, formData.newTag.trim()],
+                  newTag: '',
+                });
+              }
+            }}
+            placeholder="Add tag (press Enter)"
+            className="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
       </div>
 

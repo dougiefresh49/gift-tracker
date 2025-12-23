@@ -5,9 +5,10 @@ import {
   UserCheck,
   PieChart,
   Settings,
+  Receipt,
 } from "lucide-react";
 
-type TabType = "browse" | "my-claims" | "budgets" | "admin";
+type TabType = "browse" | "my-claims" | "budgets" | "reconciliations" | "admin";
 
 interface NavigationProps {
   activeTab: TabType;
@@ -16,7 +17,7 @@ interface NavigationProps {
 
 export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   return (
-    <nav className="fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-[10px] font-bold text-slate-400 z-50">
+    <nav className="fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-[10px] font-bold text-slate-400 z-[200]">
       <button
         onClick={() => setActiveTab("browse")}
         className={`flex flex-col items-center p-2 ${
@@ -40,6 +41,14 @@ export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
         }`}
       >
         <PieChart size={20} /> Budgets
+      </button>
+      <button
+        onClick={() => setActiveTab("reconciliations")}
+        className={`flex flex-col items-center p-2 ${
+          activeTab === "reconciliations" ? "text-red-600" : ""
+        }`}
+      >
+        <Receipt size={20} /> Reconcile
       </button>
       <button
         onClick={() => setActiveTab("admin")}

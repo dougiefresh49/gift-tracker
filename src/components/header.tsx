@@ -11,7 +11,7 @@ interface HeaderProps {
 
 export function Header({ currentUser, setCurrentUser, profiles }: HeaderProps) {
   return (
-    <header className="bg-red-700 text-white p-4 shadow-lg sticky top-0 z-10 flex justify-between items-center">
+    <header className="bg-red-700 text-white p-4 shadow-lg sticky top-0 z-[200] flex justify-between items-center">
       <div className="flex items-center gap-2">
         <Gift size={24} />
         <span className="font-bold text-lg">Gift Tracker</span>

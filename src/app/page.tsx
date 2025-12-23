@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function HomePage() {
   const [profilesRes, giftsRes, budgetsRes] = await Promise.all([
     supabase.from('profiles').select('*'),
-    supabase.from('gifts').select('*, gift_recipients(profile:profiles(*))'),
+    supabase.from('gifts').select('*, gift_recipients(profile:profiles(*)), gift_tags(*)'),
     supabase.from('budgets').select('*'),
   ]);
 

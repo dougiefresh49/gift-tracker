@@ -12,9 +12,11 @@ export interface Gift {
   image_url: string | null;
   status: "available" | "claimed" | "santa";
   claimed_by_id: string | null;
+  purchaser_id: string | null;
   is_santa: boolean;
   created_at: string;
   gift_recipients: { profile: Profile }[];
+  gift_tags: { tag: string }[];
 }
 
 export interface Budget {
@@ -22,6 +24,17 @@ export interface Budget {
   gifter_id: string;
   recipient_id: string;
   limit_amount: number;
+}
+
+export interface Reconciliation {
+  id: string;
+  gifter_id: string;
+  recipient_id: string;
+  purchaser_id: string;
+  amount: number;
+  transaction_type: "iou" | "cash" | "check" | "bank_transfer" | "trade";
+  notes: string | null;
+  created_at: string;
 }
 
 // Import data types

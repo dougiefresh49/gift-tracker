@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Filter, ArrowUpDown, Lock } from "lucide-react";
+import { Search, Filter, ArrowUpDown, Lock, Plus } from "lucide-react";
 import { GiftCard } from "~/components/gift-card";
+import { AddGiftForm } from "~/components/forms/add-gift-form";
 import type { Gift, Profile } from "~/lib/types";
 
 interface StockViewProps {
@@ -26,6 +27,7 @@ export function StockView({
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [showSanta, setShowSanta] = useState(false);
+  const [showAddGift, setShowAddGift] = useState(false);
 
   const filteredGifts = useMemo(() => {
     let result = showSanta 
@@ -84,30 +86,38 @@ export function StockView({
 
   return (
     <>
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 items-center justify-between">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowSanta(false)}
+            className={`px-4 py-2 rounded-lg font-bold text-sm border transition-colors ${
+              !showSanta
+                ? 'bg-red-600 text-white border-red-600'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            Stock
+          </button>
+          <button
+            onClick={() => setShowSanta(true)}
+            className={`px-4 py-2 rounded-lg font-bold text-sm border transition-colors flex items-center gap-2 ${
+              showSanta
+                ? 'bg-red-600 text-white border-red-600'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Lock size={16} /> Santa
+          </button>
+        </div>
         <button
-          onClick={() => setShowSanta(false)}
-          className={`px-4 py-2 rounded-lg font-bold text-sm border transition-colors ${
-            !showSanta
-              ? 'bg-red-600 text-white border-red-600'
-              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-          }`}
+          onClick={() => setShowAddGift(true)}
+          className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          Stock
-        </button>
-        <button
-          onClick={() => setShowSanta(true)}
-          className={`px-4 py-2 rounded-lg font-bold text-sm border transition-colors flex items-center gap-2 ${
-            showSanta
-              ? 'bg-red-600 text-white border-red-600'
-              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-          }`}
-        >
-          <Lock size={16} /> Santa
+          <Plus size={16} /> Add Gift
         </button>
       </div>
 
-      <div className="bg-white p-3 rounded-xl border flex gap-2 shadow-sm sticky top-20 z-10">
+      <div className="bg-white p-3 rounded-xl border flex gap-2 shadow-sm sticky top-20 z-[150]">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
           <input
@@ -145,7 +155,10 @@ export function StockView({
               <select
                 className="w-full border rounded p-1 text-sm"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setShowFilters(false);
+                }}
               >
                 <option value="available">Available</option>
                 <option value="claimed">Claimed</option>
@@ -157,7 +170,10 @@ export function StockView({
               <select
                 className="w-full border rounded p-1 text-sm"
                 value={filterRecipient}
-                onChange={(e) => setFilterRecipient(e.target.value)}
+                onChange={(e) => {
+                  setFilterRecipient(e.target.value);
+                  setShowFilters(false);
+                }}
               >
                 <option value="all">Everyone</option>
                 {profiles.map((p) => (
@@ -172,7 +188,10 @@ export function StockView({
               <select
                 className="w-full border rounded p-1 text-sm"
                 value={filterGifter}
-                onChange={(e) => setFilterGifter(e.target.value)}
+                onChange={(e) => {
+                  setFilterGifter(e.target.value);
+                  setShowFilters(false);
+                }}
               >
                 <option value="all">All</option>
                 <option value="unclaimed">Unclaimed</option>
@@ -203,6 +222,24 @@ export function StockView({
           </div>
         )}
       </div>
+
+      {showAddGift && (
+        <div className="bg-white p-4 rounded-xl border shadow-sm mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-bold text-slate-700">Add New Gift</h2>
+            <button
+              onClick={() => setShowAddGift(false)}
+              className="text-slate-400 hover:text-slate-600"
+            >
+              ×
+            </button>
+          </div>
+          <AddGiftForm
+            profiles={profiles}
+            onClose={() => setShowAddGift(false)}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {filteredGifts.map((gift) => (

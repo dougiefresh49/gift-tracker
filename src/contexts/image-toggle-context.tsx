@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { ImageToggleButton } from '~/components/image-toggle-button';
 
 interface ImageToggleContextType {
@@ -12,11 +18,25 @@ const ImageToggleContext = createContext<ImageToggleContextType | undefined>(
   undefined
 );
 
+const STORAGE_KEY = 'gift-tracker-hide-images';
+
 export function ImageToggleProvider({ children }: { children: ReactNode }) {
   const [hideImages, setHideImages] = useState(false);
 
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved !== null) {
+      setHideImages(saved === 'true');
+    }
+  }, []);
+
   const toggleImages = () => {
-    setHideImages((prev) => !prev);
+    setHideImages((prev) => {
+      const newValue = !prev;
+      localStorage.setItem(STORAGE_KEY, String(newValue));
+      return newValue;
+    });
   };
 
   return (

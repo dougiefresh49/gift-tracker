@@ -7,6 +7,7 @@ import { Navigation } from '~/components/navigation';
 import { StockView } from '~/components/views/stock-view';
 import { MyPicksView } from '~/components/views/my-picks-view';
 import { BudgetsView } from '~/components/views/budgets-view';
+import { ReconciliationsView } from '~/components/views/reconciliations-view';
 import { AdminView } from '~/components/views/admin-view';
 import { RealtimeStatus } from '~/components/realtime-status';
 import { ImageToggleButton } from '~/components/image-toggle-button';
@@ -29,7 +30,7 @@ function GiftTrackerAppContent({
   const [currentUser, setCurrentUser] = useState<string>('');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'browse' | 'my-claims' | 'budgets' | 'admin'
+    'browse' | 'my-claims' | 'budgets' | 'reconciliations' | 'admin'
   >('browse');
 
   // Check localStorage on mount
@@ -92,11 +93,19 @@ function GiftTrackerAppContent({
             gifts={myClaims}
             profiles={profiles}
             currentUser={currentUser}
+            activeProfile={activeProfile}
           />
         )}
         {activeTab === 'budgets' && (
           <BudgetsView
             budgets={budgets}
+            gifts={gifts}
+            profiles={profiles}
+            currentUser={currentUser}
+          />
+        )}
+        {activeTab === 'reconciliations' && (
+          <ReconciliationsView
             gifts={gifts}
             profiles={profiles}
             currentUser={currentUser}
