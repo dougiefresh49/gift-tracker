@@ -77,7 +77,7 @@ export async function updateGift(
     .from('gift_recipients')
     .select('profile_id')
     .eq('gift_id', giftId);
-    
+
   const currentIds = existingRecipients?.map((r) => r.profile_id) ?? [];
   const newIds = formData.recipientIds;
 
@@ -112,7 +112,11 @@ export async function deleteGift(giftId: string) {
   revalidatePath('/');
 }
 
-export async function toggleGiftRecipient(giftId: string, profileId: string, isAdding: boolean) {
+export async function toggleGiftRecipient(
+  giftId: string,
+  profileId: string,
+  isAdding: boolean
+) {
   if (isAdding) {
     await supabase.from('gift_recipients').insert({
       gift_id: giftId,
@@ -148,7 +152,11 @@ export async function unclaimGift(giftId: string) {
   revalidatePath('/');
 }
 
-export async function addBudget(budget: { gifterId: string; recipientId: string; limitAmount: number }) {
+export async function addBudget(budget: {
+  gifterId: string;
+  recipientId: string;
+  limitAmount: number;
+}) {
   const { error } = await supabase.from('budgets').insert({
     gifter_id: budget.gifterId,
     recipient_id: budget.recipientId,
@@ -166,9 +174,15 @@ export async function deleteBudget(budgetId: string) {
 }
 
 export async function addProfile(name: string) {
-  const { error } = await supabase.from('profiles').insert({ name });
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({ name })
+    .select()
+    .single();
+
   if (error) throw new Error('Error adding profile: ' + error.message);
   revalidatePath('/');
+  return data;
 }
 
 export async function deleteProfile(id: string) {
@@ -176,4 +190,3 @@ export async function deleteProfile(id: string) {
   if (error) throw new Error('Error deleting profile');
   revalidatePath('/');
 }
-
