@@ -1,20 +1,31 @@
-# Christmas Gift Tracker
+<p align="center">
+  <img src="public/logo-full.webp" alt="Gift Tracker Logo" width="320"  />
+</p>
 
-A Next.js application built with the T3 Stack for tracking family Christmas gifts. Features real-time updates via Supabase, filtering, sorting, and budget tracking.
+<h1 align="center">Gift Tracker</h1>
+
+<p align="center">
+  A Next.js application built with the T3 Stack for tracking family Christmas gifts.<br/>
+  Features real-time updates via Supabase, filtering, sorting, grouping, and budget tracking.
+</p>
 
 ## Features
 
-- **Stock View**: Browse all available gifts with search, filters, and sorting
-- **Santa's List**: View secret Santa items (grayscale until hover)
+- **Stock View**: Browse all available gifts with search, filters, sorting, and grouping by gifter/recipient
+- **Santa's List**: Toggle to view secret Santa items
 - **My Picks**: See and manage your claimed gifts
 - **Budgets**: Track spending limits with visual progress bars
-- **Admin Panel**: Import master data, backup/restore, and manage database
+- **Reconciliation**: Calculate and settle who owes what after gift exchanges
+- **Multi-Recipient Gifts**: Assign gifts to multiple people with split budget costs
+- **Return Tracking**: Mark items as needing return or already returned
+- **Admin Panel**: Import master data, manage people, and budgets
 
 ## Tech Stack
 
-- **Next.js 14** (App Router)
+- **Next.js 16** (App Router, Server Components, Server Actions)
 - **TypeScript**
 - **Tailwind CSS**
+- **shadcn/ui** (UI Components)
 - **Supabase** (Database & Realtime)
 - **Zod** (Validation)
 - **Lucide React** (Icons)
@@ -40,7 +51,7 @@ Create a `.env.local` file in the root directory with your Supabase credentials:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_publishable_key_here
 ```
 
 **Note**: The `.env.local` file is gitignored and should not be committed. Make sure to add these variables to your deployment platform (Vercel, etc.) as well.
@@ -63,9 +74,9 @@ pnpm dev
 
 ## Initial Setup
 
-1. Go to the **Admin** tab
-2. Click **Run Master Import** to populate the database with the master gift list
-3. Select your name from the dropdown in the header
+1. On first launch, select your name from the onboarding modal (or add yourself)
+2. Optionally set up spending budgets for each recipient
+3. Go to the **Admin** tab to import gifts via JSON paste
 4. Start claiming gifts!
 
 ## Usage
@@ -98,10 +109,12 @@ pnpm dev
 ```
 src/
 ├── app/              # Next.js app router pages
+├── actions/          # Server Actions for database operations
 ├── components/       # React components
 │   ├── forms/       # Form components
+│   ├── ui/          # shadcn/ui components
 │   └── views/       # Tab view components
-├── data/            # Static data (master import)
+├── contexts/         # React Context providers
 ├── hooks/           # Custom React hooks
 ├── lib/             # Utilities (Supabase, schemas, types)
 └── styles/          # Global styles
@@ -109,18 +122,21 @@ src/
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key | Yes |
+| Variable                                       | Description                   | Required |
+| ---------------------------------------------- | ----------------------------- | -------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                     | Your Supabase project URL     | Yes      |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Your Supabase publishable key | Yes      |
 
 ## Database Schema
 
-The app uses three main tables:
+The app uses the following tables:
 
 - **profiles**: Family members
-- **gifts**: Gift items with status, recipient, and claimer
+- **gifts**: Gift items with status, recipient, claimer, purchaser, and return status
 - **budgets**: Spending limits between gifter and recipient pairs
+- **gift_recipients**: Join table for multi-recipient gifts
+- **gift_tags**: Tags for categorizing gifts
+- **reconciliations**: Settlement records for gift exchanges
 
 See `docs/supabase-schema.sql` for the full schema.
 
@@ -143,4 +159,3 @@ pnpm lint
 ## License
 
 MIT
-
