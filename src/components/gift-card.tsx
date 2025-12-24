@@ -92,7 +92,8 @@ export function GiftCard({
     }
   };
 
-  const hasOpenDropdown = activeRecipientDropdown === gift.id || activeDropdown === gift.id;
+  const hasOpenDropdown =
+    activeRecipientDropdown === gift.id || activeDropdown === gift.id;
 
   return (
     <>
@@ -101,14 +102,14 @@ export function GiftCard({
           gift.status === 'claimed' ? 'border-l-4 border-l-green-500' : ''
         } ${hasOpenDropdown ? 'z-[100]' : ''}`}
       >
-        <div className="h-40 bg-slate-100 relative">
+        <div className="h-40 bg-white relative">
           {hideImages ? (
-            <div className="w-full h-full bg-slate-300 pointer-events-none" />
+            <div className="w-full h-full bg-white pointer-events-none" />
           ) : gift.image_url ? (
             <img
               src={gift.image_url}
               alt={gift.name}
-              className="w-full h-full object-cover pointer-events-none"
+              className="w-full h-full object-contain pointer-events-none"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-300 pointer-events-none">
@@ -179,7 +180,8 @@ export function GiftCard({
                 <span>
                   Purchased by:{' '}
                   <span className="font-bold">
-                    {profiles.find((p) => p.id === gift.purchaser_id)?.name ?? 'Unknown'}
+                    {profiles.find((p) => p.id === gift.purchaser_id)?.name ??
+                      'Unknown'}
                   </span>
                 </span>
                 <span>•</span>
