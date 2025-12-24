@@ -7,58 +7,54 @@ import {
   Settings,
   Receipt,
 } from "lucide-react";
+import { cn } from "~/lib/utils";
 
 type TabType = "browse" | "my-claims" | "budgets" | "reconciliations" | "admin";
+
+const ADMIN_USER_ID = "1e13c1e6-eea7-4739-bcfd-b0fbb9548cc3";
 
 interface NavigationProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  currentUserId: string;
+  isVisible?: boolean;
 }
 
-export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
+export function Navigation({ activeTab, setActiveTab, currentUserId, isVisible = true }: NavigationProps) {
+  const isAdmin = currentUserId === ADMIN_USER_ID;
+  
+  const tabs = [
+    { id: "browse" as const, icon: LayoutDashboard, label: "Stock" },
+    { id: "my-claims" as const, icon: UserCheck, label: "Mine" },
+    { id: "budgets" as const, icon: PieChart, label: "Budgets" },
+    { id: "reconciliations" as const, icon: Receipt, label: "Reconcile" },
+    ...(isAdmin ? [{ id: "admin" as const, icon: Settings, label: "Admin" }] : []),
+  ];
+
   return (
-    <nav className="fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-[10px] font-bold text-slate-400 z-[200]">
-      <button
-        onClick={() => setActiveTab("browse")}
-        className={`flex flex-col items-center p-2 ${
-          activeTab === "browse" ? "text-red-600" : ""
-        }`}
-      >
-        <LayoutDashboard size={20} /> Stock
-      </button>
-      <button
-        onClick={() => setActiveTab("my-claims")}
-        className={`flex flex-col items-center p-2 ${
-          activeTab === "my-claims" ? "text-red-600" : ""
-        }`}
-      >
-        <UserCheck size={20} /> Mine
-      </button>
-      <button
-        onClick={() => setActiveTab("budgets")}
-        className={`flex flex-col items-center p-2 ${
-          activeTab === "budgets" ? "text-red-600" : ""
-        }`}
-      >
-        <PieChart size={20} /> Budgets
-      </button>
-      <button
-        onClick={() => setActiveTab("reconciliations")}
-        className={`flex flex-col items-center p-2 ${
-          activeTab === "reconciliations" ? "text-red-600" : ""
-        }`}
-      >
-        <Receipt size={20} /> Reconcile
-      </button>
-      <button
-        onClick={() => setActiveTab("admin")}
-        className={`flex flex-col items-center p-2 ${
-          activeTab === "admin" ? "text-red-600" : ""
-        }`}
-      >
-        <Settings size={20} /> Admin
-      </button>
+    <nav 
+      className={cn(
+        "fixed bottom-0 left-0 right-0 bg-background border-t z-[200] transition-transform duration-300",
+        isVisible ? "translate-y-0" : "translate-y-full"
+      )}
+    >
+      <div className="flex justify-around items-center py-1 max-w-lg mx-auto">
+        {tabs.map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-3 py-1.5 text-[10px] font-medium transition-colors rounded-lg min-w-[60px]",
+              activeTab === id 
+                ? "text-primary bg-primary/5" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Icon className="h-5 w-5" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
     </nav>
   );
 }
-

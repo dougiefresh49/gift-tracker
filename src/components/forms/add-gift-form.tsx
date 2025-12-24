@@ -1,7 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import type { Profile } from "~/lib/types";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Badge } from "~/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Label } from "~/components/ui/label";
+import { Checkbox } from "~/components/ui/checkbox";
 
 import { addGift } from "~/actions/gift-actions";
 
@@ -33,8 +46,9 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
     try {
       await addGift(formData);
       onClose();
-    } catch (e: any) {
-      alert(e.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
     }
   };
 
@@ -49,76 +63,81 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 p-4 border rounded-lg space-y-3">
-      <input
-        className="w-full border p-2 rounded"
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        placeholder="Gift name"
-        required
-      />
-      <div className="flex gap-2">
-        <input
-          className="w-full border p-2 rounded"
-          type="number"
-          step="0.01"
-          min="0"
-          value={formData.price}
-          onChange={(e) =>
-            setFormData({ ...formData, price: parseFloat(e.target.value) })
-          }
-          placeholder="Price"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Gift Name</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="Gift name"
           required
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-bold text-slate-700 mb-2">
-          Purchaser (Who bought this?)
-        </label>
-        <select
-          value={formData.purchaserId}
-          onChange={(e) =>
-            setFormData({ ...formData, purchaserId: e.target.value })
-          }
-          className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Select purchaser (optional)</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="price">Price</Label>
+          <Input
+            id="price"
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.price}
+            onChange={(e) =>
+              setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+            }
+            placeholder="0.00"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Purchaser</Label>
+          <Select
+            value={formData.purchaserId}
+            onValueChange={(value) =>
+              setFormData({ ...formData, purchaserId: value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Who bought?" />
+            </SelectTrigger>
+            <SelectContent>
+              {profiles.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      
-      <div className="space-y-1">
-        <p className="text-sm font-bold text-slate-500">Recipients:</p>
-        <div className="flex flex-wrap gap-2">
+
+      <div className="space-y-2">
+        <Label>Recipients</Label>
+        <div className="flex flex-wrap gap-1.5">
           {profiles.map((p) => (
-            <button
+            <Badge
               key={p.id}
-              type="button"
+              variant={formData.recipientIds.includes(p.id) ? "default" : "outline"}
+              className="cursor-pointer"
               onClick={() => toggleRecipient(p.id)}
-              className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                formData.recipientIds.includes(p.id)
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
-              }`}
             >
               {p.name}
-            </button>
+            </Badge>
           ))}
         </div>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-sm font-bold text-slate-500">Tags:</p>
-        <div className="flex flex-wrap gap-2 mb-2">
+      <div className="space-y-2">
+        <Label>Tags</Label>
+        <div className="flex flex-wrap gap-1.5 mb-2">
           {formData.tags.map((tag, idx) => (
-            <span
+            <Badge
               key={idx}
-              className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 flex items-center gap-1"
+              variant="secondary"
+              className="flex items-center gap-1 pr-1"
             >
               {tag}
               <button
@@ -129,85 +148,91 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
                     tags: formData.tags.filter((_, i) => i !== idx),
                   })
                 }
-                className="text-blue-700 hover:text-blue-900"
+                className="hover:text-destructive"
               >
-                ×
+                <X className="h-3 w-3" />
               </button>
-            </span>
+            </Badge>
           ))}
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={formData.newTag}
-            onChange={(e) =>
-              setFormData({ ...formData, newTag: e.target.value })
+        <Input
+          type="text"
+          value={formData.newTag}
+          onChange={(e) =>
+            setFormData({ ...formData, newTag: e.target.value })
+          }
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && formData.newTag.trim()) {
+              e.preventDefault();
+              setFormData({
+                ...formData,
+                tags: [...formData.tags, formData.newTag.trim()],
+                newTag: '',
+              });
             }
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && formData.newTag.trim()) {
-                e.preventDefault();
-                setFormData({
-                  ...formData,
-                  tags: [...formData.tags, formData.newTag.trim()],
-                  newTag: '',
-                });
-              }
-            }}
-            placeholder="Add tag (press Enter)"
-            className="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          }}
+          placeholder="Add tag (press Enter)"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="imageUrl">Image URL</Label>
+        <Input
+          id="imageUrl"
+          value={formData.imageUrl}
+          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+          placeholder="https://..."
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="isSanta"
+            checked={formData.isSanta}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, isSanta: checked as boolean })
+            }
           />
+          <Label htmlFor="isSanta" className="text-sm">Santa Item?</Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Label className="text-sm">Return Status:</Label>
+          <Select
+            value={formData.returnStatus}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                returnStatus: value as "NONE" | "TO_RETURN" | "RETURNED",
+              })
+            }
+          >
+            <SelectTrigger className="w-28 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NONE">None</SelectItem>
+              <SelectItem value="TO_RETURN">To Return</SelectItem>
+              <SelectItem value="RETURNED">Returned</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <input
-        className="w-full border p-2 rounded text-xs"
-        value={formData.imageUrl}
-        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-        placeholder="Image URL (optional)"
-      />
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={formData.isSanta}
-          onChange={(e) =>
-            setFormData({ ...formData, isSanta: e.target.checked })
-          }
-        />
-        Santa Item?
-      </label>
-      <label className="flex items-center gap-2">
-        <span className="text-sm font-bold">Return Status:</span>
-        <select
-          value={formData.returnStatus}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              returnStatus: e.target.value as "NONE" | "TO_RETURN" | "RETURNED",
-            })
-          }
-          className="border rounded px-2 py-1 text-sm"
-        >
-          <option value="NONE">None</option>
-          <option value="TO_RETURN">To Return</option>
-          <option value="RETURNED">Returned</option>
-        </select>
-      </label>
-      <div className="flex gap-2">
-        <button
+      <div className="flex gap-2 pt-2">
+        <Button
           type="button"
+          variant="outline"
+          className="flex-1"
           onClick={onClose}
-          className="flex-1 bg-slate-200 text-slate-700 py-2 rounded font-bold"
         >
           Cancel
-        </button>
-        <button
-          type="submit"
-          className="flex-1 bg-blue-600 text-white py-2 rounded font-bold"
-        >
+        </Button>
+        <Button type="submit" className="flex-1">
           Add Gift
-        </button>
+        </Button>
       </div>
     </form>
   );
 }
-

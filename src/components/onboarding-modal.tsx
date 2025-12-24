@@ -1,8 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Plus, DollarSign, X, Check } from 'lucide-react';
+import { User, Plus, DollarSign, Check } from 'lucide-react';
 import { addProfile, addBudget } from '~/actions/gift-actions';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Badge } from '~/components/ui/badge';
 import type { Profile, Budget } from '~/lib/types';
 
 interface OnboardingModalProps {
@@ -60,8 +71,9 @@ export function OnboardingModal({
       await addProfile(newPersonName.trim());
       // Reload the page to get the new profile
       window.location.reload();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
       setIsAddingPerson(false);
     }
   };
@@ -96,8 +108,9 @@ export function OnboardingModal({
       // Clear form for next budget
       setBudgetForm({ recipientId: '', limitAmount: '' });
       setIsAddingBudget(false);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
       setIsAddingBudget(false);
     }
   };
@@ -108,216 +121,219 @@ export function OnboardingModal({
 
   if (step === 'add-person') {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Add New Person</h2>
-              <button
-                onClick={() => setStep('select')}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <p className="text-sm text-slate-600">
+      <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              Add New Person
+            </CardTitle>
+            <CardDescription>
               Add a new family member or recipient to the gift tracker.
-            </p>
-          </div>
-          <form onSubmit={handleAddNewPerson} className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
-                placeholder="Enter name (e.g., Eli, Grandma)"
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setStep('select')}
-                className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg font-bold hover:bg-slate-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isAddingPerson || !newPersonName.trim()}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAddingPerson ? 'Adding...' : 'Add Person'}
-              </button>
-            </div>
-          </form>
-        </div>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddNewPerson} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Name
+                </label>
+                <Input
+                  type="text"
+                  value={newPersonName}
+                  onChange={(e) => setNewPersonName(e.target.value)}
+                  placeholder="Enter name (e.g., Eli, Grandma)"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setStep('select')}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={isAddingPerson || !newPersonName.trim()}
+                >
+                  {isAddingPerson ? 'Adding...' : 'Add Person'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (showBudgetForm && selectedUserId) {
+    const availableRecipients = profiles
+      .filter((p) => p.id !== selectedUserId)
+      .filter((p) => !addedBudgets.some((b) => b.recipientId === p.id));
+
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
-          <div className="p-6 border-b">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="text-green-600" size={24} />
-              <h2 className="text-xl font-bold">Set Your Budget?</h2>
-            </div>
-            <p className="text-sm text-slate-600">
-              Would you like to set a spending budget? You can skip this and set
-              it later.
-            </p>
-          </div>
-          <form onSubmit={handleSubmitBudget} className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Who are you buying for?
-              </label>
-              <select
-                value={budgetForm.recipientId}
-                onChange={(e) =>
-                  setBudgetForm({ ...budgetForm, recipientId: e.target.value })
-                }
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required={budgetForm.limitAmount !== ''}
-              >
-                <option value="">Select recipient</option>
-                {profiles
-                  .filter((p) => p.id !== selectedUserId)
-                  .filter(
-                    (p) => !addedBudgets.some((b) => b.recipientId === p.id)
-                  )
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Budget Limit ($)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={budgetForm.limitAmount}
-                onChange={(e) =>
-                  setBudgetForm({ ...budgetForm, limitAmount: e.target.value })
-                }
-                placeholder="0.00"
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
-
-            {addedBudgets.length > 0 && (
-              <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-                <p className="text-xs font-bold text-slate-500 uppercase mb-2">
-                  Budgets Added
-                </p>
-                {addedBudgets.map((budget, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between bg-white rounded px-3 py-2 text-sm"
-                  >
-                    <span>
-                      <span className="font-bold">{budget.recipientName}</span>
-                      {' - '}
-                      <span className="text-green-600 font-bold">
-                        ${budget.limitAmount.toFixed(2)}
-                      </span>
-                    </span>
-                    <Check className="text-green-600" size={16} />
-                  </div>
-                ))}
+      <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md max-h-[90vh] overflow-auto">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Set Your Budget?
+            </CardTitle>
+            <CardDescription>
+              Would you like to set a spending budget? You can skip this and set it later.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmitBudget} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Who are you buying for?
+                </label>
+                <Select
+                  value={budgetForm.recipientId}
+                  onValueChange={(value) =>
+                    setBudgetForm({ ...budgetForm, recipientId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select recipient" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[10000]">
+                    {availableRecipients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Budget Limit ($)
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={budgetForm.limitAmount}
+                  onChange={(e) =>
+                    setBudgetForm({ ...budgetForm, limitAmount: e.target.value })
+                  }
+                  placeholder="0.00"
+                  required
+                />
+              </div>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleSkipBudget}
-                className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg font-bold hover:bg-slate-300"
-              >
-                {addedBudgets.length > 0 ? 'Skip More' : 'Skip'}
-              </button>
-              <button
-                type="submit"
-                disabled={
-                  isAddingBudget ||
-                  !budgetForm.recipientId ||
-                  !budgetForm.limitAmount
-                }
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAddingBudget ? 'Adding...' : 'Add Budget'}
-              </button>
-            </div>
+              {addedBudgets.length > 0 && (
+                <div className="bg-muted rounded-lg p-4 space-y-2">
+                  <p className="text-xs font-bold text-muted-foreground uppercase mb-2">
+                    Budgets Added
+                  </p>
+                  {addedBudgets.map((budget, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between bg-background rounded px-3 py-2 text-sm"
+                    >
+                      <span>
+                        <span className="font-bold">{budget.recipientName}</span>
+                        {' - '}
+                        <span className="text-green-600 font-bold">
+                          ${budget.limitAmount.toFixed(2)}
+                        </span>
+                      </span>
+                      <Check className="text-green-600 h-4 w-4" />
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {addedBudgets.length > 0 && (
-              <button
-                type="button"
-                onClick={handleFinishOnboarding}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700"
-              >
-                Done - Continue to App
-              </button>
-            )}
-          </form>
-        </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleSkipBudget}
+                >
+                  {addedBudgets.length > 0 ? 'Skip More' : 'Skip'}
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  disabled={
+                    isAddingBudget ||
+                    !budgetForm.recipientId ||
+                    !budgetForm.limitAmount
+                  }
+                >
+                  {isAddingBudget ? 'Adding...' : 'Add Budget'}
+                </Button>
+              </div>
+
+              {addedBudgets.length > 0 && (
+                <Button
+                  type="button"
+                  onClick={handleFinishOnboarding}
+                  className="w-full"
+                >
+                  Done - Continue to App
+                </Button>
+              )}
+            </form>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="text-blue-600" size={24} />
-            <h2 className="text-xl font-bold">Welcome to Gift Tracker!</h2>
-          </div>
-          <p className="text-sm text-slate-600">
+    <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            Welcome to Gift Tracker!
+          </CardTitle>
+          <CardDescription>
             Let's get started. Who are you?
-          </p>
-        </div>
-        <div className="p-6 space-y-4">
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
+            <label className="text-sm font-medium mb-2 block">
               Select your name
             </label>
-            <select
+            <Select
               value={selectedUserId}
-              onChange={(e) => handleSelectUser(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onValueChange={handleSelectUser}
             >
-              <option value="">Choose...</option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose..." />
+              </SelectTrigger>
+              <SelectContent className="z-[10000]">
+                {profiles.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="text-center text-sm text-slate-500">or</div>
-          <button
+          <div className="text-center text-sm text-muted-foreground">or</div>
+          <Button
+            variant="outline"
+            className="w-full border-dashed"
             onClick={() => setStep('add-person')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
           >
-            <Plus size={20} />
+            <Plus className="h-4 w-4 mr-2" />
             Add New Person
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

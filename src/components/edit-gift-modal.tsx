@@ -3,6 +3,19 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Gift, Profile } from '~/lib/types';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import { Badge } from '~/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
+import { Label } from '~/components/ui/label';
+import { Checkbox } from '~/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 
 import { updateGift, deleteGift } from '~/actions/gift-actions';
 
@@ -54,8 +67,9 @@ export function EditGiftModal({
       });
       onUpdate?.();
       onClose();
-    } catch (e: any) {
-      alert(e.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
     }
   };
 
@@ -65,8 +79,9 @@ export function EditGiftModal({
         await deleteGift(gift.id);
         onUpdate?.();
         onClose();
-      } catch (e: any) {
-        alert(e.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        alert(message);
       }
     }
   };
@@ -85,103 +100,109 @@ export function EditGiftModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden">
-        <div className="p-4 border-b font-bold flex justify-between bg-slate-50">
-          Edit Item
-          <button onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-3">
-          <input
-            className="w-full border p-2 rounded"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Gift name"
-            required
-          />
-          <div className="flex gap-2">
-            <input
-              className="w-full border p-2 rounded"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: parseFloat(e.target.value) })
-              }
-              placeholder="Price"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-sm font-bold text-slate-500">Recipients:</p>
-            <div className="flex flex-wrap gap-2">
-              {profiles.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => toggleRecipient(p.id)}
-                  className={`px-3 py-1 text-sm rounded-full border transition-colors ${
-                    formData.recipientIds.includes(p.id)
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  {p.name}
-                </button>
-              ))}
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+      <Card className="w-full max-w-sm max-h-[90vh] overflow-auto">
+        <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Edit Item</CardTitle>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Gift Name</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Gift name"
+                required
+              />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Purchaser (Who bought this?)
-            </label>
-            <select
-              value={formData.purchaserId}
-              onChange={(e) =>
-                setFormData({ ...formData, purchaserId: e.target.value })
-              }
-              className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select purchaser (optional)</option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Price</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                  }
+                  placeholder="0.00"
+                  required
+                />
+              </div>
 
-          <div className="space-y-1">
-            <p className="text-sm font-bold text-slate-500">Tags:</p>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 flex items-center gap-1"
+              <div className="space-y-2">
+                <Label>Purchaser</Label>
+                <Select
+                  value={formData.purchaserId || "none"}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, purchaserId: value === "none" ? "" : value })
+                  }
                 >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        tags: formData.tags.filter((_, i) => i !== idx),
-                      })
-                    }
-                    className="text-blue-700 hover:text-blue-900"
+                  <SelectTrigger>
+                    <SelectValue placeholder="Who bought?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No one</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Recipients</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {profiles.map((p) => (
+                  <Badge
+                    key={p.id}
+                    variant={formData.recipientIds.includes(p.id) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleRecipient(p.id)}
                   >
-                    ×
-                  </button>
-                </span>
-              ))}
+                    {p.name}
+                  </Badge>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2">
-              <input
+
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {formData.tags.map((tag, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="flex items-center gap-1 pr-1"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          tags: formData.tags.filter((_, i) => i !== idx),
+                        })
+                      }
+                      className="hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <Input
                 type="text"
                 value={formData.newTag}
                 onChange={(e) =>
@@ -198,63 +219,72 @@ export function EditGiftModal({
                   }
                 }}
                 placeholder="Add tag (press Enter)"
-                className="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          </div>
 
-          <input
-            className="w-full border p-2 rounded text-xs"
-            value={formData.imageUrl}
-            onChange={(e) =>
-              setFormData({ ...formData, imageUrl: e.target.value })
-            }
-            placeholder="Image URL"
-          />
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={formData.isSanta}
-              onChange={(e) =>
-                setFormData({ ...formData, isSanta: e.target.checked })
-              }
-            />
-            Santa Item?
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="text-sm font-bold">Return Status:</span>
-            <select
-              value={formData.returnStatus}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  returnStatus: e.target.value as 'NONE' | 'TO_RETURN' | 'RETURNED',
-                })
-              }
-              className="border rounded px-2 py-1 text-sm"
-            >
-              <option value="NONE">None</option>
-              <option value="TO_RETURN">To Return</option>
-              <option value="RETURNED">Returned</option>
-            </select>
-          </label>
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="flex-1 bg-red-100 text-red-600 py-2 rounded font-bold"
-            >
-              Delete
-            </button>
-            <button
-              type="submit"
-              className="flex-[2] bg-blue-600 text-white py-2 rounded font-bold"
-            >
-              Save
-            </button>
-          </div>
-        </form>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-imageUrl">Image URL</Label>
+              <Input
+                id="edit-imageUrl"
+                value={formData.imageUrl}
+                onChange={(e) =>
+                  setFormData({ ...formData, imageUrl: e.target.value })
+                }
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit-isSanta"
+                  checked={formData.isSanta}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isSanta: checked as boolean })
+                  }
+                />
+                <Label htmlFor="edit-isSanta" className="text-sm">Santa Item?</Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Return:</Label>
+                <Select
+                  value={formData.returnStatus}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      returnStatus: value as 'NONE' | 'TO_RETURN' | 'RETURNED',
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-28 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">None</SelectItem>
+                    <SelectItem value="TO_RETURN">To Return</SelectItem>
+                    <SelectItem value="RETURNED">Returned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+              <Button type="submit" className="flex-[2]">
+                Save
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

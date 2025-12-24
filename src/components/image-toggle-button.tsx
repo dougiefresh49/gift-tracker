@@ -2,18 +2,20 @@
 
 import { Eye, EyeOff } from 'lucide-react';
 import { useImageToggle } from '~/contexts/image-toggle-context';
+import { Button } from '~/components/ui/button';
 
 export function ImageToggleButton() {
   const { hideImages, toggleImages } = useImageToggle();
 
   return (
-    <button
+    <Button
       onClick={toggleImages}
-      className="bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg hover:bg-slate-700 transition-colors text-sm flex items-center gap-2"
+      variant="secondary"
+      size="icon"
+      className="h-10 w-10 rounded-full shadow-lg"
+      title={hideImages ? 'Show Images' : 'Hide Images'}
     >
-      {hideImages ? <EyeOff size={16} /> : <Eye size={16} />}
-      {hideImages ? 'Show Images' : 'Hide Images'}
-    </button>
+      {hideImages ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </Button>
   );
 }
-

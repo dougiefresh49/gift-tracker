@@ -3,6 +3,16 @@
 import { useState } from 'react';
 import { DollarSign, Trash2 } from 'lucide-react';
 import type { Profile, Budget } from '~/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
 
 import { addBudget, deleteBudget } from "~/actions/gift-actions";
 
@@ -38,9 +48,10 @@ export function BudgetManager({ profiles, budgets, onClose, showList = true, sho
       setLimitAmount('');
       onClose?.();
       onDataChange?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.error(err);
-      alert(err.message);
+      alert(message);
     } finally {
       setIsAdding(false);
     }
@@ -52,8 +63,9 @@ export function BudgetManager({ profiles, budgets, onClose, showList = true, sho
     try {
       await deleteBudget(budgetId);
       onDataChange?.();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
     }
   };
 
@@ -61,94 +73,90 @@ export function BudgetManager({ profiles, budgets, onClose, showList = true, sho
     return profiles.find((p) => p.id === id)?.name ?? 'Unknown';
   };
 
-  return (
-    <div className={showHeader ? 'bg-white p-6 rounded-xl border' : ''}>
-      {showHeader && (
-        <div className="flex items-center gap-2 mb-4">
-          <DollarSign className="text-green-600" size={20} />
-          <h3 className="font-bold text-lg">Set Budgets</h3>
+  const content = (
+    <>
+      <form onSubmit={handleAddBudget} className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={gifterId} onValueChange={setGifterId}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Gifter" />
+            </SelectTrigger>
+            <SelectContent>
+              {profiles.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={recipientId} onValueChange={setRecipientId}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Recipient" />
+            </SelectTrigger>
+            <SelectContent>
+              {profiles.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
 
-      <form onSubmit={handleAddBudget} className="space-y-4">
-        <div className="flex gap-2 flex-wrap">
-          <select
-            value={gifterId}
-            onChange={(e) => setGifterId(e.target.value)}
-            className="flex-1 min-w-[150px] border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            required
-          >
-            <option value="">Gifter (Who buys?)</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={recipientId}
-            onChange={(e) => setRecipientId(e.target.value)}
-            className="flex-1 min-w-[150px] border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-            required
-          >
-            <option value="">Recipient (For whom?)</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-
-          <input
+        <div className="flex gap-2">
+          <Input
             type="number"
             step="0.01"
             min="0"
             value={limitAmount}
             onChange={(e) => setLimitAmount(e.target.value)}
             placeholder="Limit ($)"
-            className="flex-1 min-w-[120px] border border-green-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="flex-1 h-9"
             required
           />
 
-          <button
+          <Button
             type="submit"
+            size="sm"
             disabled={isAdding || !gifterId || !recipientId || !limitAmount}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isAdding ? 'Adding...' : 'Set'}
-          </button>
+            {isAdding ? 'Adding...' : 'Set Budget'}
+          </Button>
         </div>
       </form>
 
       {showList && (
         <>
           {budgets.length > 0 && (
-            <div className="mt-6">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">
+            <div className="mt-4">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">
                 Active Budgets
               </h4>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {budgets.map((budget) => (
                   <div
                     key={budget.id}
-                    className="bg-slate-50 rounded-lg px-4 py-3 flex items-center justify-between"
+                    className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between text-sm"
                   >
-                    <span className="text-sm">
-                      <span className="font-bold">{getProfileName(budget.gifter_id)}</span> plans to
-                      spend{' '}
-                      <span className="font-bold text-green-600">
+                    <span>
+                      <span className="font-medium">{getProfileName(budget.gifter_id)}</span>
+                      {' → '}
+                      <span className="font-medium">{getProfileName(budget.recipient_id)}</span>
+                      {' • '}
+                      <span className="text-primary font-bold">
                         ${budget.limit_amount.toFixed(2)}
-                      </span>{' '}
-                      on <span className="font-bold">{getProfileName(budget.recipient_id)}</span>
+                      </span>
                     </span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
                       onClick={() => handleDeleteBudget(budget.id)}
-                      className="text-slate-400 hover:text-red-600 transition-colors"
                       title="Delete budget"
                     >
-                      <Trash2 size={16} />
-                    </button>
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -156,16 +164,33 @@ export function BudgetManager({ profiles, budgets, onClose, showList = true, sho
           )}
 
           {budgets.length === 0 && (
-            <div className="mt-6">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">
+            <div className="mt-4">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">
                 Active Budgets
               </h4>
-              <p className="text-slate-400 text-sm italic">No budgets defined.</p>
+              <p className="text-muted-foreground text-sm italic">No budgets defined.</p>
             </div>
           )}
         </>
       )}
-    </div>
+    </>
+  );
+
+  if (!showHeader) {
+    return content;
+  }
+
+  return (
+    <Card>
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <DollarSign className="h-4 w-4" />
+          Set Budgets
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 pt-2">
+        {content}
+      </CardContent>
+    </Card>
   );
 }
-

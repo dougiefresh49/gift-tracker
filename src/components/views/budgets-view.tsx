@@ -3,6 +3,16 @@
 import { useState, useMemo } from 'react';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { BudgetManager } from '~/components/budget-manager';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Progress } from '~/components/ui/progress';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '~/components/ui/sheet';
+import { cn } from '~/lib/utils';
 import type { Budget, Gift, Profile } from '~/lib/types';
 
 interface BudgetsViewProps {
@@ -58,36 +68,45 @@ export function BudgetsView({
   }, [budgets, gifts, profiles]);
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white p-4 rounded-xl border flex justify-between items-center">
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <h2 className="font-bold text-lg">Budgets</h2>
-        <button
-          onClick={() => setShowAddBudget(!showAddBudget)}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+        <Button
+          size="sm"
+          onClick={() => setShowAddBudget(true)}
         >
-          <Plus size={16} /> {showAddBudget ? 'Cancel' : 'Add Budget'}
-        </button>
+          <Plus className="h-4 w-4 mr-1" /> Add
+        </Button>
       </div>
 
-      {showAddBudget && (
-        <div className="bg-white p-6 rounded-xl border">
-          <BudgetManager
-            profiles={profiles}
-            budgets={budgets}
-            onClose={() => setShowAddBudget(false)}
-            showList={false}
-            showHeader={false}
-            onDataChange={onDataChange}
-          />
-        </div>
-      )}
+      {/* Add budget sheet */}
+      <Sheet open={showAddBudget} onOpenChange={setShowAddBudget}>
+        <SheetContent side="bottom" className="rounded-t-xl pb-20">
+          <SheetHeader>
+            <SheetTitle>Add Budget</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <BudgetManager
+              profiles={profiles}
+              budgets={budgets}
+              onClose={() => setShowAddBudget(false)}
+              showList={false}
+              showHeader={false}
+              onDataChange={onDataChange}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {budgetData.length === 0 ? (
-        <div className="bg-white p-6 rounded-xl border text-center text-slate-400">
-          <p>No budgets set up yet. Add one above or go to Admin.</p>
-        </div>
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>No budgets set up yet. Add one to track your spending.</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-2 sm:grid-cols-2">
           {budgetData.map(
             ({
               budget,
@@ -97,38 +116,38 @@ export function BudgetsView({
               percentage,
               isOverBudget,
             }) => (
-              <div
-                key={budget.id}
-                className="bg-white p-4 rounded-xl border shadow-sm"
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-sm">
-                    {gifter?.name ?? 'Unknown'} → {recipient?.name ?? 'Unknown'}
-                  </h3>
-                  {isOverBudget && (
-                    <AlertTriangle className="text-red-600" size={20} />
-                  )}
-                </div>
-                <div className="mb-2">
-                  <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>${spent.toFixed(2)}</span>
+              <Card key={budget.id} className="overflow-hidden">
+                <CardHeader className="p-3 pb-2">
+                  <CardTitle className="flex items-center justify-between text-sm">
+                    <span>
+                      {gifter?.name ?? 'Unknown'} → {recipient?.name ?? 'Unknown'}
+                    </span>
+                    {isOverBudget && (
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                    <span className={cn(isOverBudget && "text-destructive font-medium")}>
+                      ${spent.toFixed(2)}
+                    </span>
                     <span>${budget.limit_amount.toFixed(2)}</span>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        isOverBudget ? 'bg-red-600' : 'bg-green-600'
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-                {isOverBudget && (
-                  <p className="text-xs text-red-600 font-bold">
-                    Over budget by ${(spent - budget.limit_amount).toFixed(2)}
-                  </p>
-                )}
-              </div>
+                  <Progress 
+                    value={percentage} 
+                    className={cn(
+                      "h-2",
+                      isOverBudget && "[&>div]:bg-destructive"
+                    )}
+                  />
+                  {isOverBudget && (
+                    <p className="text-[10px] text-destructive font-medium mt-1">
+                      ${(spent - budget.limit_amount).toFixed(2)} over
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             )
           )}
         </div>

@@ -1,8 +1,21 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Receipt, DollarSign, CheckCircle } from 'lucide-react';
+import { Receipt, DollarSign } from 'lucide-react';
 import { addReconciliation } from '~/actions/gift-actions';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Badge } from '~/components/ui/badge';
+import { Input } from '~/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select';
+import { Separator } from '~/components/ui/separator';
+import { cn } from '~/lib/utils';
 import type { Gift, Profile } from '~/lib/types';
 
 interface ReconciliationsViewProps {
@@ -65,10 +78,8 @@ export function ReconciliationsView({
       const returnStatus = gift.return_status ?? 'NONE';
 
       if (returnStatus !== 'NONE') {
-        // Returned items are credits back to the purchaser
         totals[gift.purchaser_id]!.credits += costPerRecipient;
       } else {
-        // Non-returned items count towards what's owed
         totals[gift.purchaser_id]!.total += costPerRecipient;
       }
     });
@@ -101,52 +112,51 @@ export function ReconciliationsView({
         notes: reconciliationForm.notes || undefined,
       });
       setReconciliationForm(null);
-      // Refresh would happen via realtime
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-4 rounded-xl border">
-        <div className="flex items-center gap-2 mb-4">
-          <Receipt className="text-purple-600" size={24} />
-          <h2 className="font-bold text-lg">Reconciliation</h2>
-        </div>
-        <p className="text-sm text-slate-600 mb-4">
-          Select recipients to see what you owe for gifts you gave them.
-        </p>
-
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="p-4 pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Receipt className="h-5 w-5 text-primary" />
+            Reconciliation
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Select recipients to see what you owe for gifts you gave them.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <label className="block text-sm font-medium mb-2">
             Select Recipients:
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {profiles
               .filter((p) => p.id !== currentUser)
               .map((p) => (
-                <button
+                <Badge
                   key={p.id}
-                  type="button"
+                  variant={selectedRecipients.includes(p.id) ? "default" : "outline"}
+                  className="cursor-pointer"
                   onClick={() => toggleRecipient(p.id)}
-                  className={`px-4 py-2 rounded-lg border transition-colors text-sm font-bold ${
-                    selectedRecipients.includes(p.id)
-                      ? 'bg-purple-600 text-white border-purple-600'
-                      : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
-                  }`}
                 >
                   {p.name}
-                </button>
+                </Badge>
               ))}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {selectedRecipients.length > 0 && relevantGifts.length > 0 && (
-        <div className="bg-white p-6 rounded-xl border">
-          <h3 className="font-bold text-lg mb-4">Receipt</h3>
-          <div className="space-y-2 mb-6">
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base">Receipt</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-2">
             {relevantGifts.map((gift) => {
               const recipientCount = gift.gift_recipients?.length || 1;
               const costPerRecipient = (gift.price ?? 0) / recipientCount;
@@ -156,166 +166,177 @@ export function ReconciliationsView({
               return (
                 <div
                   key={gift.id}
-                  className={`flex items-center justify-between py-2 border-b ${
-                    isReturn ? 'bg-green-50' : ''
-                  }`}
+                  className={cn(
+                    "flex items-center justify-between py-2 border-b last:border-0",
+                    isReturn && "bg-emerald-50 dark:bg-emerald-950/20 -mx-4 px-4"
+                  )}
                 >
-                  <div className="flex-1">
-                    <p className="font-bold text-sm">{gift.name}</p>
-                    <p className="text-xs text-slate-500">
-                      Purchased by: {purchaser?.name ?? 'Unknown'}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{gift.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      By: {purchaser?.name ?? 'Unknown'}
                       {isReturn && (
-                        <span className="ml-2 text-green-600 font-bold">
-                          ({returnStatus === 'RETURNED' ? 'Returned' : 'To Return'})
-                        </span>
+                        <Badge variant="outline" className="ml-1.5 text-[9px] h-4 text-emerald-600">
+                          {returnStatus === 'RETURNED' ? 'Returned' : 'To Return'}
+                        </Badge>
                       )}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-bold text-sm ${isReturn ? 'text-green-600' : ''}`}>
+                  <div className="text-right shrink-0 ml-2">
+                    <p className={cn("font-bold text-sm", isReturn && "text-emerald-600")}>
                       {isReturn ? '+' : ''}${costPerRecipient.toFixed(2)}
                     </p>
-                    <p className="text-xs text-slate-500">
-                      {isReturn ? 'Credit' : 'Owed'} • ${gift.price?.toFixed(2) ?? '0.00'}
+                    <p className="text-[10px] text-muted-foreground">
+                      {isReturn ? 'Credit' : 'Owed'}
                     </p>
                   </div>
                 </div>
               );
             })}
-          </div>
 
-          <div className="border-t pt-4">
-            <h4 className="font-bold text-sm mb-3">Amounts Owed by Purchaser:</h4>
-            <div className="space-y-3">
+            <Separator className="my-3" />
+
+            <h4 className="font-medium text-sm">By Purchaser:</h4>
+            <div className="space-y-2">
               {purchaserTotals.map(({ purchaser, total, credits }) => {
                 const netAmount = total - credits;
                 return (
                   <div
                     key={purchaser.id}
-                    className="bg-slate-50 rounded-lg p-4 flex items-center justify-between"
+                    className="bg-muted/50 rounded-lg p-3"
                   >
-                    <div>
-                      <p className="font-bold">{purchaser.name}</p>
-                      <p className="text-xs text-slate-500">
-                        {selectedRecipients
-                          .map((rid) => profiles.find((p) => p.id === rid)?.name)
-                          .join(', ')}
-                      </p>
-                      {credits > 0 && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Credits: ${credits.toFixed(2)}
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-sm">{purchaser.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {selectedRecipients
+                            .map((rid) => profiles.find((p) => p.id === rid)?.name)
+                            .join(', ')}
                         </p>
-                      )}
+                        {credits > 0 && (
+                          <p className="text-[10px] text-emerald-600">
+                            Credits: ${credits.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className={cn(
+                          "font-bold text-lg",
+                          netAmount < 0 ? "text-emerald-600" : "text-primary"
+                        )}>
+                          {netAmount < 0 ? '+' : ''}${Math.abs(netAmount).toFixed(2)}
+                        </p>
+                        {netAmount < 0 && (
+                          <p className="text-[10px] text-emerald-600">Credit to you</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-bold text-lg ${netAmount < 0 ? 'text-green-600' : 'text-purple-600'}`}>
-                        {netAmount < 0 ? '+' : ''}${Math.abs(netAmount).toFixed(2)}
-                      </p>
-                      {netAmount < 0 && (
-                        <p className="text-xs text-green-600">Credit to you</p>
-                      )}
-                      {reconciliationForm?.purchaserId === purchaser.id ? (
-                        <div className="mt-2 space-y-2 bg-white p-3 rounded border">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={reconciliationForm.amount}
-                            onChange={(e) =>
-                              setReconciliationForm({
-                                ...reconciliationForm,
-                                amount: e.target.value,
-                              })
-                            }
-                            placeholder="Amount"
-                            className="w-full border rounded px-2 py-1 text-sm"
-                          />
-                          <select
-                            value={reconciliationForm.transactionType}
-                            onChange={(e) =>
-                              setReconciliationForm({
-                                ...reconciliationForm,
-                                transactionType: e.target
-                                  .value as typeof reconciliationForm.transactionType,
-                              })
-                            }
-                            className="w-full border rounded px-2 py-1 text-sm"
-                          >
-                            <option value="iou">IOU</option>
-                            <option value="cash">Cash</option>
-                            <option value="check">Check</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="trade">Trade</option>
-                          </select>
-                          <input
-                            type="text"
-                            value={reconciliationForm.notes}
-                            onChange={(e) =>
-                              setReconciliationForm({
-                                ...reconciliationForm,
-                                notes: e.target.value,
-                              })
-                            }
-                            placeholder="Notes (optional)"
-                            className="w-full border rounded px-2 py-1 text-sm"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setReconciliationForm(null)}
-                              className="flex-1 bg-slate-200 text-slate-700 py-1 rounded text-sm"
-                            >
-                              Cancel
-                            </button>
-                            {selectedRecipients.map((recipientId) => (
-                              <button
-                                key={recipientId}
-                                type="button"
-                                onClick={() =>
-                                  handleReconcile(
-                                    purchaser.id,
-                                    recipientId,
-                                    netAmount
-                                  )
-                                }
-                                className="flex-1 bg-purple-600 text-white py-1 rounded text-sm font-bold"
-                              >
-                                Reconcile for{' '}
-                                {profiles.find((p) => p.id === recipientId)?.name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
+
+                    {reconciliationForm?.purchaserId === purchaser.id ? (
+                      <div className="mt-2 space-y-2 bg-background p-2 rounded border">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={reconciliationForm.amount}
+                          onChange={(e) =>
                             setReconciliationForm({
-                              purchaserId: purchaser.id,
-                              amount: Math.abs(netAmount).toFixed(2),
-                              transactionType: 'iou',
-                              notes: '',
+                              ...reconciliationForm,
+                              amount: e.target.value,
                             })
                           }
-                          className="mt-2 text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                          placeholder="Amount"
+                          className="h-8 text-sm"
+                        />
+                        <Select
+                          value={reconciliationForm.transactionType}
+                          onValueChange={(value) =>
+                            setReconciliationForm({
+                              ...reconciliationForm,
+                              transactionType: value as typeof reconciliationForm.transactionType,
+                            })
+                          }
                         >
-                          Reconcile
-                        </button>
-                      )}
-                    </div>
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="iou">IOU</SelectItem>
+                            <SelectItem value="cash">Cash</SelectItem>
+                            <SelectItem value="check">Check</SelectItem>
+                            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                            <SelectItem value="trade">Trade</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="text"
+                          value={reconciliationForm.notes}
+                          onChange={(e) =>
+                            setReconciliationForm({
+                              ...reconciliationForm,
+                              notes: e.target.value,
+                            })
+                          }
+                          placeholder="Notes (optional)"
+                          className="h-8 text-sm"
+                        />
+                        <div className="flex gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 h-7 text-xs"
+                            onClick={() => setReconciliationForm(null)}
+                          >
+                            Cancel
+                          </Button>
+                          {selectedRecipients.map((recipientId) => (
+                            <Button
+                              key={recipientId}
+                              size="sm"
+                              className="flex-1 h-7 text-xs"
+                              onClick={() =>
+                                handleReconcile(
+                                  purchaser.id,
+                                  recipientId,
+                                  netAmount
+                                )
+                              }
+                            >
+                              {profiles.find((p) => p.id === recipientId)?.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="w-full h-7 text-xs"
+                        onClick={() =>
+                          setReconciliationForm({
+                            purchaserId: purchaser.id,
+                            amount: Math.abs(netAmount).toFixed(2),
+                            transactionType: 'iou',
+                            notes: '',
+                          })
+                        }
+                      >
+                        Reconcile
+                      </Button>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {selectedRecipients.length > 0 && relevantGifts.length === 0 && (
-        <div className="bg-white p-6 rounded-xl border text-center text-slate-400">
-          <p>No gifts found for selected recipients.</p>
-        </div>
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <p>No gifts found for selected recipients.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 }
-

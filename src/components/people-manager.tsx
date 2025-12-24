@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { Users, X } from 'lucide-react';
 import type { Profile } from '~/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import { Badge } from '~/components/ui/badge';
 
 import { addProfile, deleteProfile } from "~/actions/gift-actions";
 
@@ -22,9 +26,10 @@ export function PeopleManager({ profiles }: PeopleManagerProps) {
     try {
       await addProfile(name.trim());
       setName('');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.error(err);
-      alert(err.message);
+      alert(message);
     } finally {
       setIsAdding(false);
     }
@@ -37,57 +42,61 @@ export function PeopleManager({ profiles }: PeopleManagerProps) {
 
     try {
       await deleteProfile(profileId);
-    } catch (error: any) {
-      alert(error.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(message);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl border">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="text-slate-600" size={20} />
-        <h3 className="font-bold text-lg">Manage Family & Recipients</h3>
-      </div>
-
-      <form onSubmit={handleAddPerson} className="flex gap-2 mb-4">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Name (e.g. Eli, Grandma)"
-          className="flex-1 border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isAdding}
-        />
-        <button
-          type="submit"
-          disabled={isAdding || !name.trim()}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isAdding ? 'Adding...' : 'Add Person'}
-        </button>
-      </form>
-
-      <div className="flex flex-wrap gap-2">
-        {profiles.map((profile) => (
-          <div
-            key={profile.id}
-            className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full flex items-center gap-2 text-sm"
+    <Card>
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users className="h-4 w-4" />
+          Manage People
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 pt-2 space-y-3">
+        <form onSubmit={handleAddPerson} className="flex gap-2">
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Name (e.g. Eli, Grandma)"
+            className="flex-1 h-9"
+            disabled={isAdding}
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isAdding || !name.trim()}
           >
-            <span>{profile.name}</span>
-            <button
-              onClick={() => handleDeletePerson(profile.id)}
-              className="text-slate-500 hover:text-red-600 transition-colors"
-              title="Delete person"
+            {isAdding ? 'Adding...' : 'Add'}
+          </Button>
+        </form>
+
+        <div className="flex flex-wrap gap-1.5">
+          {profiles.map((profile) => (
+            <Badge
+              key={profile.id}
+              variant="secondary"
+              className="flex items-center gap-1 pr-1"
             >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-        {profiles.length === 0 && (
-          <p className="text-slate-400 text-sm italic">No people added yet</p>
-        )}
-      </div>
-    </div>
+              <span>{profile.name}</span>
+              <button
+                onClick={() => handleDeletePerson(profile.id)}
+                className="hover:text-destructive transition-colors p-0.5 rounded-full"
+                title="Delete person"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          {profiles.length === 0 && (
+            <p className="text-muted-foreground text-sm italic">No people added yet</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
-

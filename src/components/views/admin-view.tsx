@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Database,
   Plus,
-  Download,
   Upload,
   Trash2,
   ClipboardCopy,
@@ -15,7 +14,14 @@ import type { Profile, Gift, Budget, MasterImportItem } from "~/lib/types";
 import { AddGiftForm } from "~/components/forms/add-gift-form";
 import { PeopleManager } from "~/components/people-manager";
 import { BudgetManager } from "~/components/budget-manager";
-import { addGift, addBudget, deleteBudget, addProfile, deleteProfile } from "~/actions/gift-actions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "~/components/ui/sheet";
 
 interface AdminViewProps {
   profiles: Profile[];
@@ -38,7 +44,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
     try {
       const data = JSON.parse(json) as MasterImportItem[];
       for (const item of data) {
-        // Ensure profile exists
         let { data: profile } = await supabase
           .from("profiles")
           .select("id")
@@ -56,7 +61,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
 
         if (!profile) continue;
 
-        // Check if gift exists
         const { count } = await supabase
           .from("gifts")
           .select("*", { count: "exact", head: true })
@@ -104,11 +108,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Note: Import/Wipe handlers still use direct supabase calls for bulk ops
-  // as they are admin-only/complex tasks better suited for direct DB access
-  // or a dedicated specialized server action. For now we keep them as is 
-  // but wrap in try/catch to be safe.
-
   const handleImport = async () => {
     const json = prompt("Paste JSON backup data:");
     if (!json) return;
@@ -122,7 +121,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
 
       if (!confirm("This will replace all current data. Continue?")) return;
 
-      // Clear existing data (delete in order to respect foreign keys)
       const { data: allGifts } = await supabase.from("gifts").select("id");
       const { data: allBudgets } = await supabase.from("budgets").select("id");
       const { data: allProfiles } = await supabase.from("profiles").select("id");
@@ -149,7 +147,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
         );
       }
 
-      // Import profiles
       for (const profile of data.profiles) {
         await supabase.from("profiles").insert({
           id: profile.id,
@@ -158,7 +155,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
         });
       }
 
-      // Import gifts
       for (const gift of data.gifts) {
         await supabase.from("gifts").insert({
           id: gift.id,
@@ -172,15 +168,13 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
           created_at: gift.created_at,
         });
 
-        // Restore gift recipients (Handle both new and legacy formats)
         if (gift.gift_recipients && gift.gift_recipients.length > 0) {
-          const recipientInserts = gift.gift_recipients.map((r: any) => ({
+          const recipientInserts = gift.gift_recipients.map((r: Record<string, unknown>) => ({
             gift_id: gift.id,
-            profile_id: r.profile?.id || r.profile_id, // Handle potential data structure variations
+            profile_id: (r.profile as Record<string, unknown>)?.id || r.profile_id,
           }));
           await supabase.from("gift_recipients").insert(recipientInserts);
         } else if (gift.recipient_id) {
-          // Fallback for old backups
           await supabase.from("gift_recipients").insert({
             gift_id: gift.id,
             profile_id: gift.recipient_id,
@@ -188,7 +182,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
         }
       }
 
-      // Import budgets
       for (const budget of data.budgets) {
         await supabase.from("budgets").insert({
           id: budget.id,
@@ -216,7 +209,6 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
     const confirmation = prompt("Type 'DELETE' to confirm:");
     if (confirmation !== "DELETE") return;
 
-    // Delete all gifts, budgets, then profiles (respecting foreign key constraints)
     const { data: allGifts } = await supabase.from("gifts").select("id");
     const { data: allBudgets } = await supabase.from("budgets").select("id");
     const { data: allProfiles } = await supabase.from("profiles").select("id");
@@ -246,81 +238,109 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-900 text-white p-6 rounded-xl text-center">
-        <Database className="mx-auto mb-2 opacity-50" size={40} />
-        <h2 className="font-bold mb-2">Database Setup</h2>
-        <button
-          onClick={handleMasterImport}
-          disabled={importing}
-          className="bg-indigo-500 px-6 py-2 rounded-lg font-bold hover:bg-indigo-600 disabled:opacity-50"
-        >
-          {importing ? "Importing..." : "Run Master Import (Paste JSON)"}
-        </button>
-        <p className="text-xs text-slate-400 mt-2">
-          Paste a JSON array of gifts to import into the DB.
-        </p>
-      </div>
+    <div className="space-y-4">
+      {/* Master Import */}
+      <Card className="bg-foreground text-background">
+        <CardHeader className="p-4 pb-2 text-center">
+          <Database className="mx-auto mb-1 opacity-50 h-8 w-8" />
+          <CardTitle className="text-base">Database Setup</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-2 text-center">
+          <Button
+            onClick={handleMasterImport}
+            disabled={importing}
+            variant="secondary"
+            size="sm"
+          >
+            {importing ? "Importing..." : "Run Master Import (Paste JSON)"}
+          </Button>
+          <p className="text-xs opacity-60 mt-2">
+            Paste a JSON array of gifts to import into the DB.
+          </p>
+        </CardContent>
+      </Card>
 
+      {/* People Manager */}
       <PeopleManager profiles={profiles} />
 
+      {/* Budget Manager */}
       <BudgetManager
         profiles={profiles}
         budgets={budgets}
         onDataChange={onDataChange}
       />
 
-      <div className="bg-white p-6 rounded-xl border space-y-4">
-        <h3 className="font-bold text-lg">Manual Add Gift</h3>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setShowAddGift(!showAddGift)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      {/* Manual Add Gift */}
+      <Card>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base">Manual Add Gift</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          <Button
+            onClick={() => setShowAddGift(true)}
+            size="sm"
           >
-            <Plus size={16} /> Add Gift
-          </button>
-        </div>
+            <Plus className="h-4 w-4 mr-1" /> Add Gift
+          </Button>
+        </CardContent>
+      </Card>
 
-        {showAddGift && (
-          <AddGiftForm
-            profiles={profiles}
-            onClose={() => setShowAddGift(false)}
-          />
-        )}
-      </div>
+      <Sheet open={showAddGift} onOpenChange={setShowAddGift}>
+        <SheetContent side="bottom" className="rounded-t-xl max-h-[85vh] overflow-auto pb-20">
+          <SheetHeader>
+            <SheetTitle>Add New Gift</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <AddGiftForm
+              profiles={profiles}
+              onClose={() => setShowAddGift(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
-      <div className="bg-white p-6 rounded-xl border space-y-4">
-        <h3 className="font-bold text-lg">Backup & Restore</h3>
-        <div className="flex gap-2">
-          <button
+      {/* Backup & Restore */}
+      <Card>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base">Backup & Restore</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-2 flex gap-2 flex-wrap">
+          <Button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            variant="secondary"
+            size="sm"
           >
-            {copied ? <Check size={16} /> : <ClipboardCopy size={16} />}
-            {copied ? "Copied!" : "Export to Clipboard"}
-          </button>
-          <button
+            {copied ? <Check className="h-4 w-4 mr-1" /> : <ClipboardCopy className="h-4 w-4 mr-1" />}
+            {copied ? "Copied!" : "Export"}
+          </Button>
+          <Button
             onClick={handleImport}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+            variant="outline"
+            size="sm"
           >
-            <Upload size={16} /> Import from Clipboard
-          </button>
-        </div>
-      </div>
+            <Upload className="h-4 w-4 mr-1" /> Import
+          </Button>
+        </CardContent>
+      </Card>
 
-      <div className="bg-red-50 border-2 border-red-200 p-6 rounded-xl">
-        <h3 className="font-bold text-lg text-red-900 mb-2">Danger Zone</h3>
-          <button
+      {/* Danger Zone */}
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
+          <CardDescription className="text-xs">
+            This will delete ALL profiles, gifts, and budgets. Cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          <Button
             onClick={handleWipe}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            variant="destructive"
+            size="sm"
           >
-          <Trash2 size={16} /> Wipe Database
-        </button>
-        <p className="text-xs text-red-600 mt-2">
-          This will delete ALL profiles, gifts, and budgets. Cannot be undone.
-        </p>
-      </div>
+            <Trash2 className="h-4 w-4 mr-1" /> Wipe Database
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
