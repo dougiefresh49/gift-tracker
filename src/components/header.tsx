@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
 import { Search, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Input } from "~/components/ui/input";
@@ -40,6 +40,17 @@ export function Header({
     >
       {/* Main header row */}
       <div className="flex items-center gap-2 px-3 py-2">
+        {/* Logo icon */}
+        <div className="flex-shrink-0">
+          <Image
+            src="/logo-icon.webp"
+            alt="Gift Tracker"
+            width={32}
+            height={32}
+            className="rounded-full"
+          />
+        </div>
+
         {/* Search input - takes most space */}
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
