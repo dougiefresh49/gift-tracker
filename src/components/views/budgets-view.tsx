@@ -31,7 +31,8 @@ export function BudgetsView({
         .filter(
           (g) =>
             g.claimed_by_id === budget.gifter_id &&
-            g.gift_recipients?.some((r) => r.profile.id === budget.recipient_id)
+            g.gift_recipients?.some((r) => r.profile.id === budget.recipient_id) &&
+            (g.return_status ?? 'NONE') === 'NONE' // Exclude returned items from budget
         )
         .reduce((sum, g) => {
           const recipientCount = g.gift_recipients?.length || 1;

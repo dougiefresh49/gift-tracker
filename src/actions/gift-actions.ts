@@ -11,6 +11,7 @@ export async function addGift(formData: {
   purchaserId?: string;
   tags?: string[];
   isSanta: boolean;
+  returnStatus?: 'NONE' | 'TO_RETURN' | 'RETURNED';
 }) {
   // 1. Insert Gift
   const { data: gift, error: giftError } = await supabase
@@ -22,6 +23,7 @@ export async function addGift(formData: {
       purchaser_id: formData.purchaserId || null,
       is_santa: formData.isSanta,
       status: formData.isSanta ? 'santa' : 'available',
+      return_status: formData.returnStatus ?? 'NONE',
     })
     .select()
     .single();
@@ -74,6 +76,7 @@ export async function updateGift(
     tags?: string[];
     isSanta: boolean;
     status: string;
+    returnStatus?: 'NONE' | 'TO_RETURN' | 'RETURNED';
   }
 ) {
   // 1. Update Gift Details
@@ -86,6 +89,7 @@ export async function updateGift(
       purchaser_id: formData.purchaserId || null,
       is_santa: formData.isSanta,
       status: formData.status,
+      return_status: formData.returnStatus ?? 'NONE',
     })
     .eq('id', giftId);
 
@@ -193,6 +197,19 @@ export async function unclaimGift(giftId: string) {
     .eq('id', giftId);
 
   if (error) throw new Error('Error unclaiming gift');
+  revalidatePath('/');
+}
+
+export async function updateReturnStatus(
+  giftId: string,
+  returnStatus: 'NONE' | 'TO_RETURN' | 'RETURNED'
+) {
+  const { error } = await supabase
+    .from('gifts')
+    .update({ return_status: returnStatus })
+    .eq('id', giftId);
+
+  if (error) throw new Error('Error updating return status');
   revalidatePath('/');
 }
 

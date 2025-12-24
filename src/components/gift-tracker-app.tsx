@@ -10,7 +10,6 @@ import { BudgetsView } from '~/components/views/budgets-view';
 import { ReconciliationsView } from '~/components/views/reconciliations-view';
 import { AdminView } from '~/components/views/admin-view';
 import { RealtimeStatus } from '~/components/realtime-status';
-import { ImageToggleButton } from '~/components/image-toggle-button';
 import { OnboardingModal } from '~/components/onboarding-modal';
 import type { Gift, Profile, Budget } from '~/lib/types';
 
@@ -117,7 +116,6 @@ function GiftTrackerAppContent({
       </main>
 
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
-      <ImageToggleButton />
       <RealtimeStatus />
     </div>
   );

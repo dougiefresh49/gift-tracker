@@ -42,7 +42,7 @@ export function ReconciliationsView({
   const purchaserTotals = useMemo(() => {
     const totals: Record<
       string,
-      { purchaser: Profile; gifts: Gift[]; total: number }
+      { purchaser: Profile; gifts: Gift[]; total: number; credits: number }
     > = {};
 
     relevantGifts.forEach((gift) => {
@@ -55,14 +55,22 @@ export function ReconciliationsView({
           purchaser,
           gifts: [],
           total: 0,
+          credits: 0,
         };
       }
 
       totals[gift.purchaser_id]!.gifts.push(gift);
-      // Split cost evenly among recipients
       const recipientCount = gift.gift_recipients?.length || 1;
       const costPerRecipient = (gift.price ?? 0) / recipientCount;
-      totals[gift.purchaser_id]!.total += costPerRecipient;
+      const returnStatus = gift.return_status ?? 'NONE';
+
+      if (returnStatus !== 'NONE') {
+        // Returned items are credits back to the purchaser
+        totals[gift.purchaser_id]!.credits += costPerRecipient;
+      } else {
+        // Non-returned items count towards what's owed
+        totals[gift.purchaser_id]!.total += costPerRecipient;
+      }
     });
 
     return Object.values(totals);
@@ -143,23 +151,32 @@ export function ReconciliationsView({
               const recipientCount = gift.gift_recipients?.length || 1;
               const costPerRecipient = (gift.price ?? 0) / recipientCount;
               const purchaser = profiles.find((p) => p.id === gift.purchaser_id);
+              const returnStatus = gift.return_status ?? 'NONE';
+              const isReturn = returnStatus !== 'NONE';
               return (
                 <div
                   key={gift.id}
-                  className="flex items-center justify-between py-2 border-b"
+                  className={`flex items-center justify-between py-2 border-b ${
+                    isReturn ? 'bg-green-50' : ''
+                  }`}
                 >
                   <div className="flex-1">
                     <p className="font-bold text-sm">{gift.name}</p>
                     <p className="text-xs text-slate-500">
                       Purchased by: {purchaser?.name ?? 'Unknown'}
+                      {isReturn && (
+                        <span className="ml-2 text-green-600 font-bold">
+                          ({returnStatus === 'RETURNED' ? 'Returned' : 'To Return'})
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-sm">
-                      ${costPerRecipient.toFixed(2)}
+                    <p className={`font-bold text-sm ${isReturn ? 'text-green-600' : ''}`}>
+                      {isReturn ? '+' : ''}${costPerRecipient.toFixed(2)}
                     </p>
                     <p className="text-xs text-slate-500">
-                      of ${gift.price?.toFixed(2) ?? '0.00'}
+                      {isReturn ? 'Credit' : 'Owed'} • ${gift.price?.toFixed(2) ?? '0.00'}
                     </p>
                   </div>
                 </div>
@@ -170,113 +187,124 @@ export function ReconciliationsView({
           <div className="border-t pt-4">
             <h4 className="font-bold text-sm mb-3">Amounts Owed by Purchaser:</h4>
             <div className="space-y-3">
-              {purchaserTotals.map(({ purchaser, total }) => (
-                <div
-                  key={purchaser.id}
-                  className="bg-slate-50 rounded-lg p-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-bold">{purchaser.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {selectedRecipients
-                        .map((rid) => profiles.find((p) => p.id === rid)?.name)
-                        .join(', ')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg text-purple-600">
-                      ${total.toFixed(2)}
-                    </p>
-                    {reconciliationForm?.purchaserId === purchaser.id ? (
-                      <div className="mt-2 space-y-2 bg-white p-3 rounded border">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={reconciliationForm.amount}
-                          onChange={(e) =>
-                            setReconciliationForm({
-                              ...reconciliationForm,
-                              amount: e.target.value,
-                            })
-                          }
-                          placeholder="Amount"
-                          className="w-full border rounded px-2 py-1 text-sm"
-                        />
-                        <select
-                          value={reconciliationForm.transactionType}
-                          onChange={(e) =>
-                            setReconciliationForm({
-                              ...reconciliationForm,
-                              transactionType: e.target
-                                .value as typeof reconciliationForm.transactionType,
-                            })
-                          }
-                          className="w-full border rounded px-2 py-1 text-sm"
-                        >
-                          <option value="iou">IOU</option>
-                          <option value="cash">Cash</option>
-                          <option value="check">Check</option>
-                          <option value="bank_transfer">Bank Transfer</option>
-                          <option value="trade">Trade</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={reconciliationForm.notes}
-                          onChange={(e) =>
-                            setReconciliationForm({
-                              ...reconciliationForm,
-                              notes: e.target.value,
-                            })
-                          }
-                          placeholder="Notes (optional)"
-                          className="w-full border rounded px-2 py-1 text-sm"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setReconciliationForm(null)}
-                            className="flex-1 bg-slate-200 text-slate-700 py-1 rounded text-sm"
+              {purchaserTotals.map(({ purchaser, total, credits }) => {
+                const netAmount = total - credits;
+                return (
+                  <div
+                    key={purchaser.id}
+                    className="bg-slate-50 rounded-lg p-4 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-bold">{purchaser.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {selectedRecipients
+                          .map((rid) => profiles.find((p) => p.id === rid)?.name)
+                          .join(', ')}
+                      </p>
+                      {credits > 0 && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Credits: ${credits.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold text-lg ${netAmount < 0 ? 'text-green-600' : 'text-purple-600'}`}>
+                        {netAmount < 0 ? '+' : ''}${Math.abs(netAmount).toFixed(2)}
+                      </p>
+                      {netAmount < 0 && (
+                        <p className="text-xs text-green-600">Credit to you</p>
+                      )}
+                      {reconciliationForm?.purchaserId === purchaser.id ? (
+                        <div className="mt-2 space-y-2 bg-white p-3 rounded border">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={reconciliationForm.amount}
+                            onChange={(e) =>
+                              setReconciliationForm({
+                                ...reconciliationForm,
+                                amount: e.target.value,
+                              })
+                            }
+                            placeholder="Amount"
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                          <select
+                            value={reconciliationForm.transactionType}
+                            onChange={(e) =>
+                              setReconciliationForm({
+                                ...reconciliationForm,
+                                transactionType: e.target
+                                  .value as typeof reconciliationForm.transactionType,
+                              })
+                            }
+                            className="w-full border rounded px-2 py-1 text-sm"
                           >
-                            Cancel
-                          </button>
-                          {selectedRecipients.map((recipientId) => (
+                            <option value="iou">IOU</option>
+                            <option value="cash">Cash</option>
+                            <option value="check">Check</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="trade">Trade</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={reconciliationForm.notes}
+                            onChange={(e) =>
+                              setReconciliationForm({
+                                ...reconciliationForm,
+                                notes: e.target.value,
+                              })
+                            }
+                            placeholder="Notes (optional)"
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                          <div className="flex gap-2">
                             <button
-                              key={recipientId}
                               type="button"
-                              onClick={() =>
-                                handleReconcile(
-                                  purchaser.id,
-                                  recipientId,
-                                  total
-                                )
-                              }
-                              className="flex-1 bg-purple-600 text-white py-1 rounded text-sm font-bold"
+                              onClick={() => setReconciliationForm(null)}
+                              className="flex-1 bg-slate-200 text-slate-700 py-1 rounded text-sm"
                             >
-                              Reconcile for{' '}
-                              {profiles.find((p) => p.id === recipientId)?.name}
+                              Cancel
                             </button>
-                          ))}
+                            {selectedRecipients.map((recipientId) => (
+                              <button
+                                key={recipientId}
+                                type="button"
+                                onClick={() =>
+                                  handleReconcile(
+                                    purchaser.id,
+                                    recipientId,
+                                    netAmount
+                                  )
+                                }
+                                className="flex-1 bg-purple-600 text-white py-1 rounded text-sm font-bold"
+                              >
+                                Reconcile for{' '}
+                                {profiles.find((p) => p.id === recipientId)?.name}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setReconciliationForm({
-                            purchaserId: purchaser.id,
-                            amount: total.toFixed(2),
-                            transactionType: 'iou',
-                            notes: '',
-                          })
-                        }
-                        className="mt-2 text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-                      >
-                        Reconcile
-                      </button>
-                    )}
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReconciliationForm({
+                              purchaserId: purchaser.id,
+                              amount: Math.abs(netAmount).toFixed(2),
+                              transactionType: 'iou',
+                              notes: '',
+                            })
+                          }
+                          className="mt-2 text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                        >
+                          Reconcile
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

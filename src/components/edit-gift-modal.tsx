@@ -28,6 +28,7 @@ export function EditGiftModal({
     tags: gift.gift_tags?.map((t) => t.tag) ?? [],
     newTag: '',
     isSanta: gift.is_santa,
+    returnStatus: (gift.return_status ?? 'NONE') as 'NONE' | 'TO_RETURN' | 'RETURNED',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +50,7 @@ export function EditGiftModal({
         status,
         purchaserId: formData.purchaserId || undefined,
         tags: formData.tags,
+        returnStatus: formData.returnStatus,
       });
       onUpdate?.();
       onClose();
@@ -218,6 +220,23 @@ export function EditGiftModal({
               }
             />
             Santa Item?
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="text-sm font-bold">Return Status:</span>
+            <select
+              value={formData.returnStatus}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  returnStatus: e.target.value as 'NONE' | 'TO_RETURN' | 'RETURNED',
+                })
+              }
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value="NONE">None</option>
+              <option value="TO_RETURN">To Return</option>
+              <option value="RETURNED">Returned</option>
+            </select>
           </label>
           <div className="flex gap-2 pt-2">
             <button

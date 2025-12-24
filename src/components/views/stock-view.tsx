@@ -23,6 +23,7 @@ export function StockView({
   const [filterStatus, setFilterStatus] = useState("available");
   const [filterRecipient, setFilterRecipient] = useState("all");
   const [filterGifter, setFilterGifter] = useState("all");
+  const [filterReturnStatus, setFilterReturnStatus] = useState("none");
   const [sortOption, setSortOption] = useState("name-asc");
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
@@ -60,6 +61,16 @@ export function StockView({
       }
     }
 
+    // Filter by return status - default to hiding TO_RETURN and RETURNED
+    if (filterReturnStatus === "none") {
+      result = result.filter((g) => (g.return_status ?? "NONE") === "NONE");
+    } else if (filterReturnStatus === "to_return") {
+      result = result.filter((g) => (g.return_status ?? "NONE") === "TO_RETURN");
+    } else if (filterReturnStatus === "returned") {
+      result = result.filter((g) => (g.return_status ?? "NONE") === "RETURNED");
+    }
+    // If filterReturnStatus is "all", show all items regardless of return status
+
     result.sort((a, b) => {
       switch (sortOption) {
         case "price-asc":
@@ -80,6 +91,7 @@ export function StockView({
     filterStatus,
     filterRecipient,
     filterGifter,
+    filterReturnStatus,
     sortOption,
     showSanta,
   ]);
@@ -200,6 +212,22 @@ export function StockView({
                     {p.name}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 mb-1">Return Status</p>
+              <select
+                className="w-full border rounded p-1 text-sm"
+                value={filterReturnStatus}
+                onChange={(e) => {
+                  setFilterReturnStatus(e.target.value);
+                  setShowFilters(false);
+                }}
+              >
+                <option value="none">None (Hide Returns)</option>
+                <option value="all">All</option>
+                <option value="to_return">To Return</option>
+                <option value="returned">Returned</option>
               </select>
             </div>
           </div>

@@ -10,6 +10,7 @@ import {
   claimGift,
   unclaimGift,
   toggleGiftRecipient,
+  updateReturnStatus,
 } from '~/actions/gift-actions';
 
 interface GiftCardProps {
@@ -172,14 +173,47 @@ export function GiftCard({
         <div className="p-3 flex-1 flex flex-col">
           <h3 className="font-bold text-sm mb-3 line-clamp-2">{gift.name}</h3>
 
-          {gift.purchaser_id && (
-            <p className="text-xs text-slate-500 mb-2">
-              Purchased by:{' '}
-              <span className="font-bold">
-                {profiles.find((p) => p.id === gift.purchaser_id)?.name ?? 'Unknown'}
-              </span>
-            </p>
-          )}
+          <div className="flex items-center gap-2 mb-2 text-xs text-slate-500">
+            {gift.purchaser_id && (
+              <>
+                <span>
+                  Purchased by:{' '}
+                  <span className="font-bold">
+                    {profiles.find((p) => p.id === gift.purchaser_id)?.name ?? 'Unknown'}
+                  </span>
+                </span>
+                <span>•</span>
+              </>
+            )}
+            <span>
+              Return:{' '}
+              <select
+                value={gift.return_status ?? 'NONE'}
+                onChange={async (e) => {
+                  try {
+                    await updateReturnStatus(
+                      gift.id,
+                      e.target.value as 'NONE' | 'TO_RETURN' | 'RETURNED'
+                    );
+                    onUpdate?.();
+                  } catch (e: any) {
+                    alert(e.message);
+                  }
+                }}
+                className={`text-[10px] font-bold rounded px-2 py-0.5 border transition-colors ${
+                  gift.return_status === 'TO_RETURN'
+                    ? 'bg-orange-100 text-orange-700 border-orange-300'
+                    : gift.return_status === 'RETURNED'
+                    ? 'bg-green-100 text-green-700 border-green-300'
+                    : 'bg-slate-100 text-slate-500 border-slate-300'
+                }`}
+              >
+                <option value="NONE">None</option>
+                <option value="TO_RETURN">To Return</option>
+                <option value="RETURNED">Returned</option>
+              </select>
+            </span>
+          </div>
 
           {gift.gift_tags && gift.gift_tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">

@@ -14,6 +14,7 @@ export interface Gift {
   claimed_by_id: string | null;
   purchaser_id: string | null;
   is_santa: boolean;
+  return_status: "NONE" | "TO_RETURN" | "RETURNED";
   created_at: string;
   gift_recipients: { profile: Profile }[];
   gift_tags: { tag: string }[];
