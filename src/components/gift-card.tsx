@@ -273,6 +273,7 @@ export function GiftCard({
         <EditGiftModal
           gift={editingItem}
           profiles={profiles}
+          currentUser={currentUser}
           onClose={() => setEditingItem(null)}
           onUpdate={() => {
             setEditingItem(null);

@@ -20,10 +20,11 @@ import { addGift } from "~/actions/gift-actions";
 
 interface AddGiftFormProps {
   profiles: Profile[];
+  currentUser?: string;
   onClose: () => void;
 }
 
-export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
+export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     price: 0,
@@ -44,7 +45,10 @@ export function AddGiftForm({ profiles, onClose }: AddGiftFormProps) {
     }
 
     try {
-      await addGift(formData);
+      await addGift({
+        ...formData,
+        createdById: currentUser,
+      });
       onClose();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';

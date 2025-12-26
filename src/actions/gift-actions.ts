@@ -9,6 +9,7 @@ export async function addGift(formData: {
   imageUrl: string;
   recipientIds: string[];
   purchaserId?: string;
+  createdById?: string;
   tags?: string[];
   isSanta: boolean;
   returnStatus?: 'NONE' | 'TO_RETURN' | 'RETURNED';
@@ -21,6 +22,7 @@ export async function addGift(formData: {
       price: formData.price,
       image_url: formData.imageUrl || null,
       purchaser_id: formData.purchaserId || null,
+      created_by_id: formData.createdById || null,
       is_santa: formData.isSanta,
       status: formData.isSanta ? 'santa' : 'available',
       return_status: formData.returnStatus ?? 'NONE',
@@ -73,12 +75,23 @@ export async function updateGift(
     imageUrl: string;
     recipientIds: string[];
     purchaserId?: string;
+    claimedById?: string;
     tags?: string[];
     isSanta: boolean;
     status: string;
     returnStatus?: 'NONE' | 'TO_RETURN' | 'RETURNED';
   }
 ) {
+  // Determine status based on claimer
+  let finalStatus = formData.status;
+  if (formData.claimedById !== undefined) {
+    if (formData.claimedById) {
+      finalStatus = formData.isSanta ? 'santa' : 'claimed';
+    } else {
+      finalStatus = formData.isSanta ? 'santa' : 'available';
+    }
+  }
+
   // 1. Update Gift Details
   const { error } = await supabase
     .from('gifts')
@@ -87,8 +100,9 @@ export async function updateGift(
       price: formData.price,
       image_url: formData.imageUrl || null,
       purchaser_id: formData.purchaserId || null,
+      claimed_by_id: formData.claimedById || null,
       is_santa: formData.isSanta,
-      status: formData.status,
+      status: finalStatus,
       return_status: formData.returnStatus ?? 'NONE',
     })
     .eq('id', giftId);

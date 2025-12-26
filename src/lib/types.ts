@@ -13,6 +13,7 @@ export interface Gift {
   status: "available" | "claimed" | "santa";
   claimed_by_id: string | null;
   purchaser_id: string | null;
+  created_by_id: string | null;
   is_santa: boolean;
   return_status: "NONE" | "TO_RETURN" | "RETURNED";
   created_at: string;

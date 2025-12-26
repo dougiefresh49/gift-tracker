@@ -75,7 +75,7 @@ export function Header({
               <ChevronDown className="h-3 w-3 opacity-70" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-48 z-[300]">
             {profiles.map((p) => (
               <DropdownMenuItem
                 key={p.id}

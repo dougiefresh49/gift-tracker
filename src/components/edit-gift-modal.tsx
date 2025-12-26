@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Gift as GiftIcon } from 'lucide-react';
 import type { Gift, Profile } from '~/lib/types';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
@@ -22,6 +22,7 @@ import { updateGift, deleteGift } from '~/actions/gift-actions';
 interface EditGiftModalProps {
   gift: Gift;
   profiles: Profile[];
+  currentUser: string;
   onClose: () => void;
   onUpdate?: () => void;
 }
@@ -29,15 +30,22 @@ interface EditGiftModalProps {
 export function EditGiftModal({
   gift,
   profiles,
+  currentUser,
   onClose,
   onUpdate,
 }: EditGiftModalProps) {
+  // Check if current user can delete this gift
+  const canDelete = 
+    gift.created_by_id === currentUser || 
+    gift.purchaser_id === currentUser;
+
   const [formData, setFormData] = useState({
     name: gift.name,
     price: gift.price ?? 0,
     imageUrl: gift.image_url ?? '',
     recipientIds: gift.gift_recipients?.map((r) => r.profile.id) ?? [],
     purchaserId: gift.purchaser_id ?? '',
+    claimedById: gift.claimed_by_id ?? '',
     tags: gift.gift_tags?.map((t) => t.tag) ?? [],
     newTag: '',
     isSanta: gift.is_santa,
@@ -62,6 +70,7 @@ export function EditGiftModal({
         ...formData,
         status,
         purchaserId: formData.purchaserId || undefined,
+        claimedById: formData.claimedById || undefined,
         tags: formData.tags,
         returnStatus: formData.returnStatus,
       });
@@ -110,6 +119,25 @@ export function EditGiftModal({
         </CardHeader>
         <CardContent className="p-4 pt-2">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Image Preview */}
+            <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+              {formData.imageUrl ? (
+                <img
+                  src={formData.imageUrl}
+                  alt="Preview"
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <div className={`flex flex-col items-center text-muted-foreground ${formData.imageUrl ? 'hidden' : ''}`}>
+                <GiftIcon className="h-12 w-12" />
+                <span className="text-xs mt-1">No image</span>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="edit-name">Gift Name</Label>
               <Input
@@ -175,6 +203,28 @@ export function EditGiftModal({
                   </Badge>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Claimed By</Label>
+              <Select
+                value={formData.claimedById || "none"}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, claimedById: value === "none" ? "" : value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Who claimed?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No one (Available)</SelectItem>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -270,15 +320,17 @@ export function EditGiftModal({
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="destructive"
-                className="flex-1"
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-              <Button type="submit" className="flex-[2]">
+              {canDelete && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleDelete}
+                >
+                  Delete
+                </Button>
+              )}
+              <Button type="submit" className={canDelete ? "flex-[2]" : "flex-1"}>
                 Save
               </Button>
             </div>

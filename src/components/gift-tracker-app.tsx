@@ -165,7 +165,7 @@ function GiftTrackerAppContent({
           />
         )}
         {activeTab === 'admin' && (
-          <AdminView profiles={profiles} gifts={gifts} budgets={budgets} />
+          <AdminView profiles={profiles} gifts={gifts} budgets={budgets} currentUser={currentUser} />
         )}
       </main>
 

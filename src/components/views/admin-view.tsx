@@ -27,10 +27,11 @@ interface AdminViewProps {
   profiles: Profile[];
   gifts: Gift[];
   budgets: Budget[];
+  currentUser?: string;
   onDataChange?: () => void;
 }
 
-export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewProps) {
+export function AdminView({ profiles, gifts, budgets, currentUser, onDataChange }: AdminViewProps) {
   const [importing, setImporting] = useState(false);
   const [showAddGift, setShowAddGift] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -293,6 +294,7 @@ export function AdminView({ profiles, gifts, budgets, onDataChange }: AdminViewP
           <div className="py-4">
             <AddGiftForm
               profiles={profiles}
+              currentUser={currentUser}
               onClose={() => setShowAddGift(false)}
             />
           </div>
