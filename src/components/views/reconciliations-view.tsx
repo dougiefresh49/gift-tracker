@@ -93,7 +93,7 @@ export function ReconciliationsView({
 
     relevantGifts.forEach((gift) => {
       const giftRecipients = gift.gift_recipients?.map((r) => r.profile) ?? [];
-      const recipientCount = giftRecipients.length || 1;
+      const recipientCount = giftRecipients.length ?? 1;
       const costPerRecipient = (gift.price ?? 0) / recipientCount;
       const returnStatus = gift.return_status ?? 'NONE';
       const isReturn = returnStatus !== 'NONE';
@@ -290,6 +290,29 @@ export function ReconciliationsView({
     const isReturn = returnStatus !== 'NONE';
     const isSantaGift = gift.is_santa && !gift.claimed_by_id;
 
+    // Determine the price label based on who purchased/gifted
+    const isUserPurchaser = gift.purchaser_id === currentUser;
+    const isUserGifter = effectiveGifterId === currentUser;
+
+    let priceLabel = 'Owed';
+    let priceColor = '';
+    if (isReturn) {
+      priceLabel = 'Credit';
+      priceColor = 'text-emerald-600';
+    } else if (isUserPurchaser && isUserGifter) {
+      // You bought it and gave it (including Santa gifts)
+      priceLabel = 'You gave';
+      priceColor = 'text-blue-600';
+    } else if (isUserPurchaser && !isUserGifter) {
+      // You bought it but someone else gave it - they owe you
+      priceLabel = 'Owed to you';
+      priceColor = 'text-emerald-600';
+    } else if (!isUserPurchaser && isUserGifter) {
+      // Someone else bought it but you gave it - you owe them
+      priceLabel = 'You owe';
+      priceColor = 'text-primary';
+    }
+
     return (
       <div
         key={gift.id}
@@ -351,8 +374,10 @@ export function ReconciliationsView({
           >
             {isReturn ? '+' : ''}${costPerRecipient.toFixed(2)}
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            {isReturn ? 'Credit' : 'Owed'}
+          <p
+            className={cn('text-[10px]', priceColor || 'text-muted-foreground')}
+          >
+            {priceLabel}
           </p>
         </div>
 
