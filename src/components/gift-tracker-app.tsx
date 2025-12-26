@@ -147,6 +147,8 @@ function GiftTrackerAppContent({
             profiles={profiles}
             currentUser={currentUser}
             activeProfile={activeProfile}
+            searchQuery={searchQuery}
+            isFilterBarVisible={isHeaderVisible || !hasScrolledPastThreshold}
           />
         )}
         {activeTab === 'budgets' && (

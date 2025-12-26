@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { Filter, ArrowUpDown, Lock, Plus, Layers } from 'lucide-react';
+import { Filter, ArrowUpDown, Lock, Plus, Layers, CheckSquare, X, Edit2 } from 'lucide-react';
 import { GiftCard } from '~/components/gift-card';
 import { AddGiftForm } from '~/components/forms/add-gift-form';
+import { BulkEditModal } from '~/components/bulk-edit-modal';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
+import { Checkbox } from '~/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +57,11 @@ export function StockView({
   const [groupBy, setGroupBy] = useState<GroupByOption>('none');
   const [showSanta, setShowSanta] = useState(false);
   const [showAddGift, setShowAddGift] = useState(false);
+  
+  // Selection mode for bulk edit
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedGiftIds, setSelectedGiftIds] = useState<Set<string>>(new Set());
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
 
   // Track if user is dragging (for preventing clicks during scroll)
   const isDraggingRef = useRef(false);
@@ -240,6 +247,30 @@ export function StockView({
     setFilterGifter('all');
     setFilterReturnStatus('none');
   };
+
+  // Selection helpers
+  const toggleGiftSelection = (giftId: string) => {
+    setSelectedGiftIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(giftId)) {
+        next.delete(giftId);
+      } else {
+        next.add(giftId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedGiftIds(new Set(filteredGifts.map((g) => g.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedGiftIds(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const selectedGifts = filteredGifts.filter((g) => selectedGiftIds.has(g.id));
 
   const getGroupByLabel = (option: GroupByOption) => {
     switch (option) {
@@ -537,6 +568,16 @@ export function StockView({
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Select button */}
+            <Badge
+              variant={isSelectionMode ? 'secondary' : 'outline'}
+              className="cursor-pointer whitespace-nowrap text-xs py-1 gap-1 select-none"
+              onClick={handleFilterClick(() => setIsSelectionMode(!isSelectionMode))}
+            >
+              <CheckSquare className="h-3 w-3" />
+              Select
+            </Badge>
+
             {/* Add button */}
             <Button
               size="sm"
@@ -548,6 +589,51 @@ export function StockView({
           </div>
         </div>
       </div>
+
+      {/* Selection mode bar */}
+      {isSelectionMode && (
+        <div className="sticky top-[100px] z-[140] bg-secondary/95 backdrop-blur py-2 px-4 -mx-4 flex items-center gap-2 rounded-lg border shadow-sm">
+          <span className="text-sm font-medium">
+            {selectedGiftIds.size} selected
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={selectAllVisible}
+          >
+            Select All ({filteredGifts.length})
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={() => setSelectedGiftIds(new Set())}
+            disabled={selectedGiftIds.size === 0}
+          >
+            Clear
+          </Button>
+          <div className="flex-1" />
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 text-xs gap-1"
+            onClick={() => setShowBulkEdit(true)}
+            disabled={selectedGiftIds.size === 0}
+          >
+            <Edit2 className="h-3 w-3" />
+            Edit {selectedGiftIds.size > 0 && `(${selectedGiftIds.size})`}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            onClick={clearSelection}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Add gift sheet */}
       <Sheet open={showAddGift} onOpenChange={setShowAddGift}>
@@ -596,14 +682,36 @@ export function StockView({
               {/* Group grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                 {group.gifts.map((gift) => (
-                  <GiftCard
-                    key={`${group.id}-${gift.id}`}
-                    gift={gift}
-                    profiles={profiles}
-                    currentUser={currentUser}
-                    activeProfile={activeProfile}
-                    showClaimButton={true}
-                  />
+                  <div key={`${group.id}-${gift.id}`} className="relative">
+                    {isSelectionMode && (
+                      <div
+                        className="absolute top-2 left-2 z-[60] cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleGiftSelection(gift.id);
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedGiftIds.has(gift.id)}
+                          className="h-5 w-5 bg-background border-2 shadow-sm"
+                        />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        isSelectionMode && selectedGiftIds.has(gift.id) && 'ring-2 ring-primary'
+                      )}
+                      onClick={isSelectionMode ? () => toggleGiftSelection(gift.id) : undefined}
+                    >
+                      <GiftCard
+                        gift={gift}
+                        profiles={profiles}
+                        currentUser={currentUser}
+                        activeProfile={activeProfile}
+                        showClaimButton={!isSelectionMode}
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -613,14 +721,36 @@ export function StockView({
         // Flat grid view
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
           {filteredGifts.map((gift) => (
-            <GiftCard
-              key={gift.id}
-              gift={gift}
-              profiles={profiles}
-              currentUser={currentUser}
-              activeProfile={activeProfile}
-              showClaimButton={true}
-            />
+            <div key={gift.id} className="relative">
+              {isSelectionMode && (
+                <div
+                  className="absolute top-2 left-2 z-[60] cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleGiftSelection(gift.id);
+                  }}
+                >
+                  <Checkbox
+                    checked={selectedGiftIds.has(gift.id)}
+                    className="h-5 w-5 bg-background border-2 shadow-sm"
+                  />
+                </div>
+              )}
+              <div
+                className={cn(
+                  isSelectionMode && selectedGiftIds.has(gift.id) && 'ring-2 ring-primary rounded-lg'
+                )}
+                onClick={isSelectionMode ? () => toggleGiftSelection(gift.id) : undefined}
+              >
+                <GiftCard
+                  gift={gift}
+                  profiles={profiles}
+                  currentUser={currentUser}
+                  activeProfile={activeProfile}
+                  showClaimButton={!isSelectionMode}
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -634,6 +764,19 @@ export function StockView({
             </Button>
           )}
         </div>
+      )}
+
+      {/* Bulk Edit Modal */}
+      {showBulkEdit && (
+        <BulkEditModal
+          selectedGifts={selectedGifts}
+          profiles={profiles}
+          onClose={() => setShowBulkEdit(false)}
+          onUpdate={() => {
+            setShowBulkEdit(false);
+            clearSelection();
+          }}
+        />
       )}
     </div>
   );

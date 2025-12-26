@@ -266,6 +266,87 @@ export async function deleteProfile(id: string) {
   revalidatePath('/');
 }
 
+export async function bulkUpdateGifts(
+  giftIds: string[],
+  updates: {
+    recipientIds?: string[];
+    purchaserId?: string | null;
+    isSanta?: boolean;
+    returnStatus?: 'NONE' | 'TO_RETURN' | 'RETURNED';
+    claimedById?: string | null;
+  }
+) {
+  // Build the update object only with provided fields
+  const giftUpdate: Record<string, unknown> = {};
+
+  if (updates.purchaserId !== undefined) {
+    giftUpdate.purchaser_id = updates.purchaserId;
+  }
+  if (updates.isSanta !== undefined) {
+    giftUpdate.is_santa = updates.isSanta;
+  }
+  if (updates.returnStatus !== undefined) {
+    giftUpdate.return_status = updates.returnStatus;
+  }
+  if (updates.claimedById !== undefined) {
+    giftUpdate.claimed_by_id = updates.claimedById;
+    // Update status based on claimer
+    if (updates.claimedById) {
+      giftUpdate.status = updates.isSanta ? 'santa' : 'claimed';
+    } else {
+      giftUpdate.status = updates.isSanta ? 'santa' : 'available';
+    }
+  }
+
+  // Update gifts if there are gift-level updates
+  if (Object.keys(giftUpdate).length > 0) {
+    const { error } = await supabase
+      .from('gifts')
+      .update(giftUpdate)
+      .in('id', giftIds);
+
+    if (error) {
+      throw new Error('Error bulk updating gifts: ' + error.message);
+    }
+  }
+
+  // Handle recipient updates if provided
+  if (updates.recipientIds !== undefined) {
+    for (const giftId of giftIds) {
+      // Get existing recipients
+      const { data: existingRecipients } = await supabase
+        .from('gift_recipients')
+        .select('profile_id')
+        .eq('gift_id', giftId);
+
+      const currentIds = existingRecipients?.map((r) => r.profile_id) ?? [];
+      const newIds = updates.recipientIds;
+
+      const toAdd = newIds.filter((id) => !currentIds.includes(id));
+      const toRemove = currentIds.filter((id) => !newIds.includes(id));
+
+      if (toRemove.length > 0) {
+        await supabase
+          .from('gift_recipients')
+          .delete()
+          .eq('gift_id', giftId)
+          .in('profile_id', toRemove);
+      }
+
+      if (toAdd.length > 0) {
+        await supabase.from('gift_recipients').insert(
+          toAdd.map((pid) => ({
+            gift_id: giftId,
+            profile_id: pid,
+          }))
+        );
+      }
+    }
+  }
+
+  revalidatePath('/');
+}
+
 export async function addReconciliation(reconciliation: {
   gifterId: string;
   recipientId: string;
