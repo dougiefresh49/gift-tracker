@@ -10,10 +10,20 @@ export async function addGift(formData: {
   recipientIds: string[];
   purchaserId?: string;
   createdById?: string;
+  claimedById?: string;
+  giftType?: 'item' | 'cash' | 'gift_card';
   tags?: string[];
   isSanta: boolean;
   returnStatus?: 'NONE' | 'TO_RETURN' | 'RETURNED';
 }) {
+  // Determine status based on claimer
+  let status: 'available' | 'claimed' | 'santa' = 'available';
+  if (formData.isSanta) {
+    status = 'santa';
+  } else if (formData.claimedById) {
+    status = 'claimed';
+  }
+
   // 1. Insert Gift
   const { data: gift, error: giftError } = await supabase
     .from('gifts')
@@ -23,8 +33,10 @@ export async function addGift(formData: {
       image_url: formData.imageUrl || null,
       purchaser_id: formData.purchaserId || null,
       created_by_id: formData.createdById || null,
+      claimed_by_id: formData.claimedById || null,
+      gift_type: formData.giftType ?? 'item',
       is_santa: formData.isSanta,
-      status: formData.isSanta ? 'santa' : 'available',
+      status,
       return_status: formData.returnStatus ?? 'NONE',
     })
     .select()
@@ -76,6 +88,7 @@ export async function updateGift(
     recipientIds: string[];
     purchaserId?: string;
     claimedById?: string;
+    giftType?: 'item' | 'cash' | 'gift_card';
     tags?: string[];
     isSanta: boolean;
     status: string;
@@ -101,6 +114,7 @@ export async function updateGift(
       image_url: formData.imageUrl || null,
       purchaser_id: formData.purchaserId || null,
       claimed_by_id: formData.claimedById || null,
+      gift_type: formData.giftType ?? 'item',
       is_santa: formData.isSanta,
       status: finalStatus,
       return_status: formData.returnStatus ?? 'NONE',

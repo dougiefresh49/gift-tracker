@@ -46,7 +46,7 @@ export function MyPicksView({
 }: MyPicksViewProps) {
   const [filterRecipient, setFilterRecipient] = useState('all');
   const [filterReturnStatus, setFilterReturnStatus] =
-    useState<ReturnStatusFilter>('none');
+    useState<ReturnStatusFilter>('all'); // Default to showing all items including returns
   const [sortOption, setSortOption] = useState<SortOption>('name-asc');
   const [groupBy, setGroupBy] = useState<GroupByOption>('recipient'); // Default to recipient
   const [showSanta, setShowSanta] = useState(false);

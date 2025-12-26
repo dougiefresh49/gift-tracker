@@ -5,17 +5,20 @@ export interface Profile {
   created_at: string;
 }
 
+export type GiftType = 'item' | 'cash' | 'gift_card';
+
 export interface Gift {
   id: string;
   name: string;
   price: number;
   image_url: string | null;
-  status: "available" | "claimed" | "santa";
+  status: 'available' | 'claimed' | 'santa';
   claimed_by_id: string | null;
   purchaser_id: string | null;
   created_by_id: string | null;
   is_santa: boolean;
-  return_status: "NONE" | "TO_RETURN" | "RETURNED";
+  gift_type: GiftType;
+  return_status: 'NONE' | 'TO_RETURN' | 'RETURNED';
   created_at: string;
   gift_recipients: { profile: Profile }[];
   gift_tags: { tag: string }[];
@@ -34,7 +37,7 @@ export interface Reconciliation {
   recipient_id: string;
   purchaser_id: string;
   amount: number;
-  transaction_type: "iou" | "cash" | "check" | "bank_transfer" | "trade";
+  transaction_type: 'iou' | 'cash' | 'check' | 'bank_transfer' | 'trade';
   notes: string | null;
   created_at: string;
 }
@@ -47,4 +50,3 @@ export interface MasterImportItem {
   recipientName: string;
   isSanta: boolean;
 }
-

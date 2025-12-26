@@ -66,9 +66,19 @@ export function ViewGiftModal({
           </Button>
         </CardHeader>
         <CardContent className="p-4 pt-2 space-y-4">
-          {/* Image */}
+          {/* Image / Type Icon */}
           <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-            {gift.image_url ? (
+            {gift.gift_type === 'cash' ? (
+              <div className="flex flex-col items-center bg-green-100 dark:bg-green-950/30 w-full h-full justify-center">
+                <span className="text-5xl">💵</span>
+                <span className="text-sm mt-2 text-muted-foreground">Cash</span>
+              </div>
+            ) : gift.gift_type === 'gift_card' ? (
+              <div className="flex flex-col items-center bg-blue-100 dark:bg-blue-950/30 w-full h-full justify-center">
+                <span className="text-5xl">💳</span>
+                <span className="text-sm mt-2 text-muted-foreground">Gift Card</span>
+              </div>
+            ) : gift.image_url ? (
               <img
                 src={gift.image_url}
                 alt={gift.name}
@@ -92,6 +102,16 @@ export function ViewGiftModal({
 
           {/* Status badges */}
           <div className="flex flex-wrap gap-1.5">
+            {gift.gift_type === 'cash' && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                💵 Cash
+              </Badge>
+            )}
+            {gift.gift_type === 'gift_card' && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                💳 Gift Card
+              </Badge>
+            )}
             {gift.is_santa && <Badge variant="secondary">🎅 Santa Item</Badge>}
             {gift.status === 'claimed' && (
               <Badge variant="default">Claimed</Badge>

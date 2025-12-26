@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
-import type { Profile } from "~/lib/types";
+import { X, Gift, Banknote, CreditCard } from "lucide-react";
+import type { Profile, GiftType } from "~/lib/types";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/select";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
+import { cn } from "~/lib/utils";
 
 import { addGift } from "~/actions/gift-actions";
 
@@ -24,6 +25,12 @@ interface AddGiftFormProps {
   onClose: () => void;
 }
 
+const giftTypeOptions: { value: GiftType; label: string; icon: React.ReactNode; emoji: string }[] = [
+  { value: "item", label: "Physical Gift", icon: <Gift className="h-4 w-4" />, emoji: "🎁" },
+  { value: "cash", label: "Cash", icon: <Banknote className="h-4 w-4" />, emoji: "💵" },
+  { value: "gift_card", label: "Gift Card", icon: <CreditCard className="h-4 w-4" />, emoji: "💳" },
+];
+
 export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps) {
   const [formData, setFormData] = useState({
     name: "",
@@ -31,11 +38,20 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
     imageUrl: "",
     recipientIds: [] as string[],
     purchaserId: "",
+    giftType: "item" as GiftType,
     tags: [] as string[],
     newTag: "",
     isSanta: false,
     returnStatus: "NONE" as "NONE" | "TO_RETURN" | "RETURNED",
+    claimByPurchaser: true,
   });
+
+  // Auto-set name for cash/gift card if empty
+  const getDefaultName = () => {
+    if (formData.giftType === "cash") return "Cash";
+    if (formData.giftType === "gift_card") return "Gift Card";
+    return "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,9 +61,18 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
     }
 
     try {
+      // For cash/gift_card, auto-claim by purchaser if checkbox is checked
+      const claimedById = 
+        formData.giftType !== "item" && formData.claimByPurchaser && formData.purchaserId
+          ? formData.purchaserId
+          : undefined;
+
       await addGift({
         ...formData,
+        name: formData.name || getDefaultName(),
         createdById: currentUser,
+        giftType: formData.giftType,
+        claimedById,
       });
       onClose();
     } catch (err: unknown) {
@@ -68,20 +93,47 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Gift Type Selector */}
       <div className="space-y-2">
-        <Label htmlFor="name">Gift Name</Label>
+        <Label>Type</Label>
+        <div className="flex gap-2">
+          {giftTypeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setFormData({ ...formData, giftType: option.value })}
+              className={cn(
+                "flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all",
+                formData.giftType === option.value
+                  ? "border-primary bg-primary/5"
+                  : "border-muted hover:border-muted-foreground/30"
+              )}
+            >
+              <span className="text-xl">{option.emoji}</span>
+              <span className="text-xs font-medium">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="name">
+          {formData.giftType === "item" ? "Gift Name" : formData.giftType === "cash" ? "Description (optional)" : "Gift Card Name"}
+        </Label>
         <Input
           id="name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Gift name"
-          required
+          placeholder={formData.giftType === "item" ? "Gift name" : formData.giftType === "cash" ? "e.g., Birthday cash" : "e.g., Amazon Gift Card"}
+          required={formData.giftType === "item"}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="price">Price</Label>
+          <Label htmlFor="price">
+            {formData.giftType === "cash" ? "Amount" : formData.giftType === "gift_card" ? "Value" : "Price"}
+          </Label>
           <Input
             id="price"
             type="number"
@@ -97,7 +149,7 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
         </div>
 
         <div className="space-y-2">
-          <Label>Purchaser</Label>
+          <Label>{formData.giftType === "cash" ? "From" : "Purchaser"}</Label>
           <Select
             value={formData.purchaserId}
             onValueChange={(value) =>
@@ -105,7 +157,7 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Who bought?" />
+              <SelectValue placeholder={formData.giftType === "cash" ? "Who gave?" : "Who bought?"} />
             </SelectTrigger>
             <SelectContent>
               {profiles.map((p) => (
@@ -117,6 +169,22 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
           </Select>
         </div>
       </div>
+
+      {/* Auto-claim checkbox for cash/gift_card */}
+      {formData.giftType !== "item" && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="claimByPurchaser"
+            checked={formData.claimByPurchaser}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, claimByPurchaser: checked as boolean })
+            }
+          />
+          <Label htmlFor="claimByPurchaser" className="text-sm">
+            {formData.giftType === "cash" ? "Mark as given by giver" : "Mark as claimed by purchaser"}
+          </Label>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>Recipients</Label>
@@ -179,15 +247,18 @@ export function AddGiftForm({ profiles, currentUser, onClose }: AddGiftFormProps
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="imageUrl">Image URL</Label>
-        <Input
-          id="imageUrl"
-          value={formData.imageUrl}
-          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-          placeholder="https://..."
-        />
-      </div>
+      {/* Image URL - only for physical items */}
+      {formData.giftType === "item" && (
+        <div className="space-y-2">
+          <Label htmlFor="imageUrl">Image URL</Label>
+          <Input
+            id="imageUrl"
+            value={formData.imageUrl}
+            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+            placeholder="https://..."
+          />
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-4">
         <div className="flex items-center space-x-2">

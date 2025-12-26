@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Gift as GiftIcon } from 'lucide-react';
-import type { Gift, Profile } from '~/lib/types';
+import { X, Gift as GiftIcon, Banknote, CreditCard } from 'lucide-react';
+import type { Gift, Profile, GiftType } from '~/lib/types';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { Badge } from '~/components/ui/badge';
@@ -16,8 +16,15 @@ import {
 import { Label } from '~/components/ui/label';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { cn } from '~/lib/utils';
 
 import { updateGift, deleteGift } from '~/actions/gift-actions';
+
+const giftTypeOptions: { value: GiftType; label: string; emoji: string }[] = [
+  { value: 'item', label: 'Physical Gift', emoji: '🎁' },
+  { value: 'cash', label: 'Cash', emoji: '💵' },
+  { value: 'gift_card', label: 'Gift Card', emoji: '💳' },
+];
 
 interface EditGiftModalProps {
   gift: Gift;
@@ -46,6 +53,7 @@ export function EditGiftModal({
     recipientIds: gift.gift_recipients?.map((r) => r.profile.id) ?? [],
     purchaserId: gift.purchaser_id ?? '',
     claimedById: gift.claimed_by_id ?? '',
+    giftType: (gift.gift_type ?? 'item') as GiftType,
     tags: gift.gift_tags?.map((t) => t.tag) ?? [],
     newTag: '',
     isSanta: gift.is_santa,
@@ -71,6 +79,7 @@ export function EditGiftModal({
         status,
         purchaserId: formData.purchaserId || undefined,
         claimedById: formData.claimedById || undefined,
+        giftType: formData.giftType,
         tags: formData.tags,
         returnStatus: formData.returnStatus,
       });
@@ -119,32 +128,64 @@ export function EditGiftModal({
         </CardHeader>
         <CardContent className="p-4 pt-2">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Image Preview */}
+            {/* Image Preview / Type Icon */}
             <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-              {formData.imageUrl ? (
-                <img
-                  src={formData.imageUrl}
-                  alt="Preview"
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`flex flex-col items-center text-muted-foreground ${formData.imageUrl ? 'hidden' : ''}`}>
-                <GiftIcon className="h-12 w-12" />
-                <span className="text-xs mt-1">No image</span>
+              {formData.giftType === 'item' ? (
+                formData.imageUrl ? (
+                  <img
+                    src={formData.imageUrl}
+                    alt="Preview"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <GiftIcon className="h-12 w-12" />
+                    <span className="text-xs mt-1">No image</span>
+                  </div>
+                )
+              ) : (
+                <div className="flex flex-col items-center text-muted-foreground">
+                  <span className="text-5xl">{formData.giftType === 'cash' ? '💵' : '💳'}</span>
+                  <span className="text-xs mt-2">{formData.giftType === 'cash' ? 'Cash' : 'Gift Card'}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Gift Type Selector */}
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <div className="flex gap-2">
+                {giftTypeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, giftType: option.value })}
+                    className={cn(
+                      'flex-1 flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all',
+                      formData.giftType === option.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted hover:border-muted-foreground/30'
+                    )}
+                  >
+                    <span className="text-lg">{option.emoji}</span>
+                    <span className="text-[10px] font-medium">{option.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Gift Name</Label>
+              <Label htmlFor="edit-name">
+                {formData.giftType === 'item' ? 'Gift Name' : formData.giftType === 'cash' ? 'Description' : 'Gift Card Name'}
+              </Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Gift name"
+                placeholder={formData.giftType === 'item' ? 'Gift name' : formData.giftType === 'cash' ? 'e.g., Birthday cash' : 'e.g., Amazon Gift Card'}
                 required
               />
             </div>
@@ -272,17 +313,20 @@ export function EditGiftModal({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-imageUrl">Image URL</Label>
-              <Input
-                id="edit-imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) =>
-                  setFormData({ ...formData, imageUrl: e.target.value })
-                }
-                placeholder="https://..."
-              />
-            </div>
+            {/* Image URL - only for physical items */}
+            {formData.giftType === 'item' && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-imageUrl">Image URL</Label>
+                <Input
+                  id="edit-imageUrl"
+                  value={formData.imageUrl}
+                  onChange={(e) =>
+                    setFormData({ ...formData, imageUrl: e.target.value })
+                  }
+                  placeholder="https://..."
+                />
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center space-x-2">

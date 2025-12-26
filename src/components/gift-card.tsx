@@ -104,6 +104,14 @@ export function GiftCard({
         <div className="relative aspect-square bg-muted/30">
           {hideImages ? (
             <div className="w-full h-full bg-muted" />
+          ) : gift.gift_type === 'cash' ? (
+            <div className="w-full h-full flex items-center justify-center bg-green-50 dark:bg-green-950/20">
+              <span className="text-4xl">💵</span>
+            </div>
+          ) : gift.gift_type === 'gift_card' ? (
+            <div className="w-full h-full flex items-center justify-center bg-blue-50 dark:bg-blue-950/20">
+              <span className="text-4xl">💳</span>
+            </div>
           ) : gift.image_url ? (
             <img
               src={gift.image_url}
